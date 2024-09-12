@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-django = "^5.0.7"
+django = "^5.0.8"
 groundlight = "^0.17.1"
 framegrab = "^0.7.0"
 imgcat = "^0.5.0"
