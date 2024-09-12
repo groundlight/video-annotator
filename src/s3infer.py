@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
+"""
+This script takes a video and a detector, and runs the detector on each frame.
+It stores the results as metadata on each frame.
+"""
 import argparse
-from vid2frames import FrameDecoder
+from vid2frames import FrameManager
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
 from tqdm.auto import tqdm
@@ -23,7 +27,7 @@ def get_iq_answer(iq: ImageQuery) -> str:
         return "NONE"
 
 
-def run_detector(decoder: FrameDecoder, detector_id: str, confidence_threshold: float | None):
+def run_detector(decoder: FrameManager, detector_id: str, confidence_threshold: float | None, verbose: bool = False):
     """Feed each frame through the detector, and record the results.
     """
     gl = Groundlight()
@@ -33,32 +37,26 @@ def run_detector(decoder: FrameDecoder, detector_id: str, confidence_threshold: 
         frame = decoder.get_frame(frame_num)
         iq = gl.ask_ml(detector, frame)
         answer = get_iq_answer(iq)
-        print(f"Frame {frame_num}: {answer}")
+        if verbose:
+            print(f"Frame {frame_num}: {iq.result}")
+        md = {
+            "answer": answer,
+            "answer_confidence": iq.result.confidence,
+            "iq_id": iq.id,
+        }
+        decoder.set_metadata(frame_num, **md)
         answers.append(answer)
     return answers
-
-
-def build_video_from_answers(decoder: FrameDecoder, answers: list[str], output_path: str):
-    """Build a video from the answers.
-    """
-    print(f"(NOT YET IMPLEMENTED) Building video from {len(answers)} answers")
-    #TODO: Implement this.
-    raise NotImplementedError("Not yet implemented")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("video_path", type=str, help="Path to the input video file")
     parser.add_argument("--max-frames", type=int, default=0, help="Maximum number of frames to use")
-    parser.add_argument("--output", type=str, default=None, help="Name of file to save the output video to")
     parser.add_argument("--detector-id", type=str, required=True, help="ID of the detector to use")
     parser.add_argument("--confidence-threshold", type=float, default=None, help="Confidence threshold for inference (overrides detector's value)")
     args = parser.parse_args()
 
-    decoder = FrameDecoder(video_path=args.video_path, max_frames=args.max_frames)
+    decoder = FrameManager(video_path=args.video_path, max_frames=args.max_frames)
     answers = run_detector(decoder, args.detector_id, args.confidence_threshold)
-    if args.output:
-        output_path = args.output
-    else:
-        output_path = f"{args.video_path.rsplit('.', 1)[0]}_output.mp4"
-    build_video_from_answers(decoder, answers, output_path)
+    decoder.save_metadata()

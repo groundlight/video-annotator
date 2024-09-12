@@ -15,7 +15,7 @@ from projstate import ProjectState
 
 
 
-class FrameDecoder:
+class FrameManager:
     """Analyzes all the frames in a video, recording metadata about them.
     """
 
@@ -71,11 +71,17 @@ class FrameDecoder:
             frame = cv2.resize(frame, (800, 600))
         return frame
 
-    def fmd_by_rank(self, rank: int) -> dict:
-        """Get the frame by rank.
+    def framedat_by_rank(self, rank: int) -> dict:
+        """Gets a bunch of data about a frame, from its rank.
         :return: fmd dict with frame, metadata, and frame number
         """
         frame_num = self.sorted_indices[rank]
+        return self.framedat_by_num(frame_num)
+
+    def framedat_by_num(self, frame_num: int) -> dict:
+        """Gets a bunch of data about a frame, from its number.
+        :return: fmd dict with frame, metadata, and frame number
+        """
         fmd = self.state.get_frame_metadata(frame_num)
         out = {
             "pil_img": Image.fromarray(self.get_frame(frame_num)),
@@ -85,6 +91,9 @@ class FrameDecoder:
         out.update(fmd.md)
         return out
 
+    def set_metadata(self, frame_num: int, **kwargs):
+        """Set metadata for a frame."""
+        self.state.update_frame_metadata(num=frame_num, **kwargs)
 
     def get_frame(self, frame_num: int) -> np.ndarray:
         """Get the frame from the video given the frame number.
@@ -96,3 +105,14 @@ class FrameDecoder:
         # swap bgr to rgb
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         return self.preprocess_frame(rgb_frame)
+
+    def save_metadata(self):
+        """Save the metadata to the file frame-info.json in the project directory."""
+        fn = os.path.join(self.state.project_dir, "frame-info.json")
+        big_json_obj = []
+        for i in range(len(self.state.frame_metadata)):
+            fmd = self.state.get_frame_metadata(i)
+            big_json_obj.append(fmd.as_dict())
+        with open(fn, "w") as f:
+            json.dump(big_json_obj, f, indent=2)
+        print(f"Saved frame metadata to {fn}")

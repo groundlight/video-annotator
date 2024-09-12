@@ -9,6 +9,13 @@ class FrameMetadata(pydantic.BaseModel):
     frame_num: int
     md: dict = {}
 
+    def as_dict(self) -> dict:
+        """Convert to a dictionary.
+        """
+        out = dict(self.md)
+        out["frame_num"] = self.frame_num
+        return out
+
 
 class ProjectState(pydantic.BaseModel):
     """Stores the full state of a video for the purposes of VQA.

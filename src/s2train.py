@@ -4,13 +4,13 @@ import argparse
 from groundlight import Groundlight
 from imgcat import imgcat
 
-from vid2frames import FrameDecoder
+from vid2frames import FrameManager
 
 gl = Groundlight()
 
-def build_detector(query: str):
+def build_detector(query: str, confidence: float):
     name = query[:20]  # would be nice if I didn't have to name the detector
-    det = gl.get_or_create_detector(name=name, query=query)
+    det = gl.get_or_create_detector(name=name, query=query, confidence_threshold=confidence)
     print(f"Detector {det} being used")
     return det
 
@@ -44,16 +44,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("video_path", type=str, help="Path to the video file")
     parser.add_argument("--query", type=str, help="Query to define the model", required=True)
+    parser.add_argument("--confidence", type=float, default=0.75, help="Confidence threshold for the model")
     parser.add_argument("--max-frames", type=int, default=None, help="Maximum number of frames to analyze")
     parser.add_argument("--num-frames", type=int, default=100, help="Number of frames to submit to the model")
     parser.add_argument("--skip-frames", type=int, default=0, help="Number of frames to skip")
-    parser.add_argument("--ask-async", action="store_true", help="Ask the model asynchronously")
+    parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
     args = parser.parse_args()
 
-    decoder = FrameDecoder(video_path=args.video_path, max_frames=args.max_frames)
+    decoder = FrameManager(video_path=args.video_path, max_frames=args.max_frames)
+    # TODO: Be able to use cached clustering results from s1analyze.py
     decoder.analyze()
 
-    detector = build_detector(args.query)
+    detector = build_detector(args.query, args.confidence)
     for i in range(args.skip_frames, args.skip_frames + args.num_frames):
-        fmd = decoder.fmd_by_rank(i)
+        fmd = decoder.framedat_by_rank(i)
         submit_to_model(detector, fmd, ask_async=args.ask_async)
