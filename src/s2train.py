@@ -4,7 +4,8 @@ import argparse
 from groundlight import Groundlight
 from imgcat import imgcat
 
-from vid2frames import FrameManager
+from projstate import ProjectState
+from framemgr import FrameManager
 
 gl = Groundlight()
 
@@ -42,18 +43,16 @@ def submit_to_model(detector, fmd: dict, ask_async: bool = False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("video_path", type=str, help="Path to the video file")
+    parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--query", type=str, help="Query to define the model", required=True)
     parser.add_argument("--confidence", type=float, default=0.75, help="Confidence threshold for the model")
-    parser.add_argument("--max-frames", type=int, default=None, help="Maximum number of frames to analyze")
     parser.add_argument("--num-frames", type=int, default=100, help="Number of frames to submit to the model")
     parser.add_argument("--skip-frames", type=int, default=0, help="Number of frames to skip")
     parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
     args = parser.parse_args()
 
-    decoder = FrameManager(video_path=args.video_path, max_frames=args.max_frames)
-    # TODO: Be able to use cached clustering results from s1analyze.py
-    decoder.analyze()
+    project = ProjectState.load(args.project_dir)
+    decoder = FrameManager.for_project(project)
 
     detector = build_detector(args.query, args.confidence)
     for i in range(args.skip_frames, args.skip_frames + args.num_frames):

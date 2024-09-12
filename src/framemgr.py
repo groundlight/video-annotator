@@ -17,7 +17,7 @@ class FrameManager:
     """Analyzes all the frames in a video, recording metadata about them.
     """
 
-    def __init__(self, video_path: str, max_frames: int = 0):
+    def __init__(self, video_path: str, max_frames: int = 0, frame_metadata: FrameListMetadata | None = None):
         """
         Args:
             :video_path (str): Path to the input video file.
@@ -33,12 +33,22 @@ class FrameManager:
                 self.total_frames = max_frames
         print(f"Total frames: {self.total_frames}")
         self.qcluster = QCluster()
-        self.metadata = FrameListMetadata()
+        if frame_metadata is None:
+            self.metadata = FrameListMetadata()
+        else:
+            self.metadata = frame_metadata
+        self.frame_diversity_order = None
 
     @classmethod
     def for_project(cls, project: ProjectState):
-        return cls(video_path=project.video_path, max_frames=project.frame_count)
-
+        args = {
+            "video_path": project.video_path,
+            "max_frames": len(project.frame_metadata),
+            "frame_metadata": project.frame_metadata,
+        }
+        out = cls(**args)
+        out._update_frame_diversity_order()
+        return out
     def __len__(self):
         return self.total_frames
 
@@ -58,10 +68,14 @@ class FrameManager:
         cluster_info = self.qcluster.analyze()
         for entry in cluster_info:
             self.metadata.update_frame_metadata(num=entry["id"], diversity_rank=entry["diversity_rank"], cluster=entry["cluster"])
+        self._update_frame_diversity_order()
+        print(f"Clustering complete.  Found {len(self.qcluster)} clusters")
+
+    def _update_frame_diversity_order(self):
         N = self.total_frames
-        # Build a list of the frame numbers in diversity order
-        self.frame_diversity_order = sorted(range(N), key=lambda i: self.metadata.get_frame_metadata(i)["diversity_rank"])
-        print(f"Clustering complete.  Found {len(self.frame_diversity_order)} clusters")
+        def get_diversity_rank(i):  # just used by lambda below
+            return self.metadata.get_frame_metadata(i)["diversity_rank"]
+        self.frame_diversity_order = sorted(range(N), key=get_diversity_rank)
 
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
@@ -71,7 +85,7 @@ class FrameManager:
         return frame
 
     def framedat_by_rank(self, rank: int) -> dict:
-        """Gets a bunch of data about a frame, from its rank.
+        """Gets a bunch of data about a frame, from its rank (a.k.a. diversity order).
         :return: framedat dict with all metadata, plus:
             - pil_img: PIL image of the frame
             - frame: numpy array of the frame
@@ -111,13 +125,3 @@ class FrameManager:
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         return self.preprocess_frame(rgb_frame)
 
-    def save_metadata(self, out_dir: str="."):
-        """Save the metadata to the file frame-info.json in the project directory."""
-        fn = os.path.join(out_dir, "frame-info.json")
-        big_json_obj = []
-        for i in range(len(self.metadata)):
-            fmd = self.metadata.get_frame_metadata(i)
-            big_json_obj.append(fmd.as_dict())
-        with open(fn, "w") as f:
-            json.dump(big_json_obj, f, indent=2)
-        print(f"Saved frame metadata to {fn}")

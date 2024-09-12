@@ -41,6 +41,30 @@ class FrameListMetadata():
     def __len__(self):
         return len(self.frame_metadata)
 
+    def save(self, out_dir: str):
+        """Save the frame metadata to the project directory.
+        """
+        fn = os.path.join(out_dir, "frame-info.json")
+        big_json_obj = []
+        for i in range(len(self.frame_metadata)):
+            fmd = self.frame_metadata[i]
+            big_json_obj.append(fmd.as_dict())
+        with open(fn, "w") as f:
+            json.dump(big_json_obj, f, indent=2)
+        print(f"Saved frame metadata to {fn}")
+
+    @classmethod
+    def load(cls, project_dir: str) -> "FrameListMetadata":
+        """Load the frame metadata from the project directory.
+        """
+        fn = os.path.join(project_dir, "frame-info.json")
+        with open(fn, "r") as f:
+            big_json_obj = json.load(f)
+        out = cls()
+        for fmd in big_json_obj:
+            out.frame_metadata.append(FrameMetadata(**fmd))
+        return out
+
 
 class ProjectState():
     """Stores the full state of a video for the purposes of VQA.
@@ -75,7 +99,23 @@ class ProjectState():
     def save(self):
         """Save the project state to the project directory.
         """
+        self.frame_metadata.save(self.project_dir)
         fn = os.path.join(self.project_dir, "project-info.json")
         out = self._as_dict()
         with open(fn, "w") as f:
             json.dump(out, f, indent=2)
+        print(f"Saved project state to {fn}")
+        print(f"Project dir: {self.project_dir}")
+
+    @classmethod
+    def load(cls, project_dir: str) -> "ProjectState":
+        """Load the project state from the project directory.
+        """
+        fn = os.path.join(project_dir, "project-info.json")
+        with open(fn, "r") as f:
+            args = json.load(f)
+        args["project_dir"] = project_dir
+        out = cls(**args)
+        out.frame_metadata = FrameListMetadata.load(project_dir)
+        print(f"Loaded project state from {project_dir} with {len(out.frame_metadata)} frames")
+        return out

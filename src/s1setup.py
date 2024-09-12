@@ -8,7 +8,7 @@ import os
 from imgcat import imgcat
 from tqdm.auto import tqdm
 
-from vid2frames import FrameManager
+from framemgr import FrameManager
 from projstate import ProjectState
 
 def project_dir_from_filename(filename: str) -> str:
@@ -28,7 +28,7 @@ def show_frames(decoder: FrameManager, num_frames: int = 10):
     for i in range(num_frames):
         fmd = decoder.framedat_by_rank(i)
         frame_num = fmd["frame_num"]
-        print(f"\nPreview of #{i+1}/{num_frames} sample frame (frame #{frame_num})")
+        print(f"\nPreview of #{i+1}/{num_frames} sample frame (frame #{frame_num}, cluster {fmd['cluster']})")
         imgcat(fmd["frame"])
 
 def save_frames(decoder: FrameManager, num_frames: int, save_dir: str):
@@ -66,4 +66,3 @@ if __name__ == "__main__":
         save_frames(decoder, num_frames=args.save_frames, save_dir=project.subdir("sample_frames"))
 
     project.save()
-    decoder.save_metadata(project.project_dir)

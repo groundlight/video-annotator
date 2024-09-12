@@ -14,6 +14,11 @@ class QCluster:
     def __init__(self):
         self.model = self._load_model()
         self.images = {}
+        self.k = 0
+
+    def __len__(self):
+        """Returns the number of clusters."""
+        return self.k
 
     def _load_model(self):
         model = shufflenet_v2_x0_5(weights=ShuffleNet_V2_X0_5_Weights.DEFAULT)
@@ -47,17 +52,17 @@ class QCluster:
         embedding = self.just_embed(image)
         self.images[id] = embedding
 
-    def do_clustering(self, k: int) -> List[List[int]]:
+    def do_clustering(self) -> List[List[int]]:
         """Cluster the images into k clusters.  Returns a list of lists of int ids.
         The outer list is the clusters, and the inner list is the ids of the images in the cluster.
         """
         features = np.array(list(self.images.values()))
-        kmeans = KMeans(n_clusters=k)
+        kmeans = KMeans(n_clusters=self.k)
         kmeans.fit(features)
         label_ids = kmeans.labels_.tolist()
         # label_ids is numpy array with the cluster ids for each image.
         # we want to convert that to a list of lists of int ids
-        clusters = [[] for _ in range(k)]
+        clusters = [[] for _ in range(self.k)]
         for id, label in zip(self.images.keys(), label_ids):
             clusters[label].append(id)
         return clusters
@@ -71,15 +76,15 @@ class QCluster:
         """
         # First calculate a useful k
         N = len(self.images)
-        k = int(N**0.5)
+        self.k = int(N**0.5)
         # Run the clustering
-        clusters = self.do_clustering(k)
+        clusters = self.do_clustering()
         # Now just go through the clusters round robin to pick the diversity order, building
         # the output as we go
         out = []
         while len(out) < N:
             found_any = False
-            for i in range(k):
+            for i in range(self.k):
                 if len(clusters[i]) > 0:
                     id = clusters[i].pop(0)
                     entry = {
