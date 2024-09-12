@@ -47,8 +47,10 @@ class QCluster:
         embedding = self.just_embed(image)
         self.images[id] = embedding
 
-    def cluster(self, k: int) -> List[List[int]]:
-        """Cluster the images into k clusters."""
+    def do_clustering(self, k: int) -> List[List[int]]:
+        """Cluster the images into k clusters.  Returns a list of lists of int ids.
+        The outer list is the clusters, and the inner list is the ids of the images in the cluster.
+        """
         features = np.array(list(self.images.values()))
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(features)
@@ -60,22 +62,34 @@ class QCluster:
             clusters[label].append(id)
         return clusters
 
-    def diversity_order(self) -> List[int]:
-        """Returns the images in an order designed to maximize diversity."""
+    def analyze(self) -> List[dict]:
+        """Runs the clustering, and returns a list of dicts with the results.
+        Each dict has: 
+            - id: the id of the image
+            - cluster: the cluster id
+            - diversity_rank: the rank of the image in the cluster
+        """
         # First calculate a useful k
         N = len(self.images)
         k = int(N**0.5)
-        clusters = self.cluster(k)
-        # Now just go through the clusters round robin
-        order = []
-        while len(order) < N:
+        # Run the clustering
+        clusters = self.do_clustering(k)
+        # Now just go through the clusters round robin to pick the diversity order, building
+        # the output as we go
+        out = []
+        while len(out) < N:
             found_any = False
             for i in range(k):
                 if len(clusters[i]) > 0:
-                    order.append(clusters[i].pop(0))
+                    id = clusters[i].pop(0)
+                    entry = {
+                        "id": id,
+                        "cluster": i,
+                        "diversity_rank": len(out),
+                    }
+                    out.append(entry)
                     found_any = True
             if not found_any:
                 print("Warning: didn't find any images to add to order. This shouldn't happen!")
                 break
-
-        return order
+        return out

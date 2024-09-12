@@ -10,9 +10,7 @@ import cv2
 import numpy as np
 
 from qcluster import QCluster
-from projstate import ProjectState
-
-
+from projstate import ProjectState, FrameListMetadata
 
 
 class FrameManager:
@@ -35,7 +33,7 @@ class FrameManager:
                 self.total_frames = max_frames
         print(f"Total frames: {self.total_frames}")
         self.qcluster = QCluster()
-        self.state = ProjectState(video_path=video_path, frame_count=self.total_frames)
+        self.metadata = FrameListMetadata()
 
     @classmethod
     def for_project(cls, project: ProjectState):
@@ -57,12 +55,13 @@ class FrameManager:
             frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
         print("Scan complete, clustering frames")
-        order = self.qcluster.diversity_order()
-        for i, frame_num in enumerate(order):
-            self.state.update_frame_metadata(num=frame_num, diversity_rank=i)
+        cluster_info = self.qcluster.analyze()
+        for entry in cluster_info:
+            self.metadata.update_frame_metadata(num=entry["id"], diversity_rank=entry["diversity_rank"], cluster=entry["cluster"])
         N = self.total_frames
-        self.sorted_indices = sorted(range(N), key=lambda i: self.state.get_frame_metadata(i).md["diversity_rank"])
-        print(f"Clustering complete.  Found {len(self.sorted_indices)} clusters")
+        # Build a list of the frame numbers in diversity order
+        self.frame_diversity_order = sorted(range(N), key=lambda i: self.metadata.get_frame_metadata(i)["diversity_rank"])
+        print(f"Clustering complete.  Found {len(self.frame_diversity_order)} clusters")
 
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
@@ -73,27 +72,33 @@ class FrameManager:
 
     def framedat_by_rank(self, rank: int) -> dict:
         """Gets a bunch of data about a frame, from its rank.
-        :return: fmd dict with frame, metadata, and frame number
+        :return: framedat dict with all metadata, plus:
+            - pil_img: PIL image of the frame
+            - frame: numpy array of the frame
+            - frame_num: the frame number
         """
-        frame_num = self.sorted_indices[rank]
+        frame_num = self.frame_diversity_order[rank]
         return self.framedat_by_num(frame_num)
 
     def framedat_by_num(self, frame_num: int) -> dict:
         """Gets a bunch of data about a frame, from its number.
-        :return: fmd dict with frame, metadata, and frame number
+        :return: framedat dict with all metadata, plus:
+            - pil_img: PIL image of the frame
+            - frame: numpy array of the frame
+            - frame_num: the frame number
         """
-        fmd = self.state.get_frame_metadata(frame_num)
+        fmd = self.metadata.get_frame_metadata(frame_num)
         out = {
             "pil_img": Image.fromarray(self.get_frame(frame_num)),
             "frame": self.get_frame(frame_num),
             "frame_num": frame_num,
         }
-        out.update(fmd.md)
+        out.update(fmd)
         return out
 
     def set_metadata(self, frame_num: int, **kwargs):
         """Set metadata for a frame."""
-        self.state.update_frame_metadata(num=frame_num, **kwargs)
+        self.metadata.update_frame_metadata(num=frame_num, **kwargs)
 
     def get_frame(self, frame_num: int) -> np.ndarray:
         """Get the frame from the video given the frame number.
@@ -106,12 +111,12 @@ class FrameManager:
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
         return self.preprocess_frame(rgb_frame)
 
-    def save_metadata(self):
+    def save_metadata(self, out_dir: str="."):
         """Save the metadata to the file frame-info.json in the project directory."""
-        fn = os.path.join(self.state.project_dir, "frame-info.json")
+        fn = os.path.join(out_dir, "frame-info.json")
         big_json_obj = []
-        for i in range(len(self.state.frame_metadata)):
-            fmd = self.state.get_frame_metadata(i)
+        for i in range(len(self.metadata)):
+            fmd = self.metadata.get_frame_metadata(i)
             big_json_obj.append(fmd.as_dict())
         with open(fn, "w") as f:
             json.dump(big_json_obj, f, indent=2)

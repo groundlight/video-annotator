@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+"""Sets up a video annotation project by loading a video, and analyzing its frames.
+Creates a project-info.json file which is used by other scripts.
+"""
 import argparse
 import os
 
@@ -6,7 +9,16 @@ from imgcat import imgcat
 from tqdm.auto import tqdm
 
 from vid2frames import FrameManager
-from projstate import project_dir_from_filename, ProjectState
+from projstate import ProjectState
+
+def project_dir_from_filename(filename: str) -> str:
+    """Get the project directory from the filename.
+    """
+    base_filename = os.path.basename(filename)
+    base_filename = os.path.splitext(base_filename)[0]  # Remove the .mp4
+    out = os.path.join("./proj", base_filename)
+    os.makedirs(out, exist_ok=True)
+    return out
 
 def show_frames(decoder: FrameManager, num_frames: int = 10):
     """Show the top frames."""
@@ -27,10 +39,11 @@ def save_frames(decoder: FrameManager, num_frames: int, save_dir: str):
     for i in progress:
         fmd = decoder.framedat_by_rank(i)
         frame_num = fmd["frame_num"]
-        fn = f"diverse-{i:03d}-frame-{frame_num}.jpeg"
+        fn = f"sample-{i:03d}-frame-{frame_num}.jpeg"
         save_path = os.path.join(save_dir, fn)
         fmd["pil_img"].save(save_path)
     print(f"Saved {num_frames} frames to {save_dir}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -38,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("--project-dir", type=str, default=None, help="Path to the project directory")
     parser.add_argument("--max-frames", type=int, default=0, help="Maximum number of frames to analyze")
     parser.add_argument("--show-frames", type=int, default=10, help="Show the N most diverse sample frames")
-    parser.add_argument("--save-frames", type=int, default=100, help="Save the N most diverse sample frames to the project directory")
+    parser.add_argument("--save-frames", type=int, default=10, help="Save the N most diverse sample frames to the project directory")
     args = parser.parse_args()
 
     proj_dir = args.project_dir or project_dir_from_filename(args.video_path)
@@ -51,3 +64,6 @@ if __name__ == "__main__":
         show_frames(decoder, num_frames=args.show_frames)
     if args.save_frames > 0:
         save_frames(decoder, num_frames=args.save_frames, save_dir=project.subdir("sample_frames"))
+
+    project.save()
+    decoder.save_metadata(project.project_dir)
