@@ -1,31 +1,7 @@
+import os
 from typing import List
-import atexit
-import shelve
 
 import pydantic
-
-class GlobalShelf:
-    _instance = None
-
-    @classmethod
-    def get_instance(cls, filename, flag='c', protocol=None, writeback=False):
-        if cls._instance is None:
-            cls._instance = shelve.open(filename, flag, protocol, writeback)
-            atexit.register(cls._instance.close)
-        return cls._instance
-
-global_shelf = None
-
-def initialize_global_shelf(filename, flag='c', protocol=None, writeback=False):
-    global global_shelf
-    global_shelf = GlobalShelf.get_instance(filename, flag, protocol, writeback)
-
-
-def get_shelf():
-    if global_shelf is None:
-        raise RuntimeError("Global shelf has not been initialized. Call initialize_global_shelf() first.")
-    return global_shelf
-
 
 class FrameMetadata(pydantic.BaseModel):
     """Metadata for a single frame.
@@ -34,11 +10,12 @@ class FrameMetadata(pydantic.BaseModel):
     md: dict = {}
 
 
-class VidState(pydantic.BaseModel):
+class ProjectState(pydantic.BaseModel):
     """Stores the full state of a video for the purposes of VQA.
     """
-    video_path: str
-    frame_count: int
+    video_path: str = ""
+    project_dir: str = ""
+    frame_count: int = 0
     frame_metadata: List[FrameMetadata] = []
 
     def update_frame_metadata(self, num: int, **kwargs):
@@ -60,3 +37,19 @@ class VidState(pydantic.BaseModel):
         for i in range(len(self.frame_metadata), num + 1):
             new_fmd = FrameMetadata(frame_num=i)
             self.frame_metadata.append(new_fmd)
+
+    def subdir(self, name: str) -> str:
+        """Get the path to a subdirectory of the project directory.
+        """
+        out_dir = os.path.join(self.project_dir, name)
+        os.makedirs(out_dir, exist_ok=True)
+        return out_dir
+
+def project_dir_from_filename(filename: str) -> str:
+    """Get the project directory from the filename.
+    """
+    base_filename = os.path.basename(filename)
+    base_filename = os.path.splitext(base_filename)[0]  # Remove the .mp4
+    out = os.path.join("./proj", base_filename)
+    os.makedirs(out, exist_ok=True)
+    return out

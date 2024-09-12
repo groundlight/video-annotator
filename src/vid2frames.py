@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 
 from qcluster import QCluster
-from vidstate import VidState
+from projstate import ProjectState
 
 
 
@@ -35,7 +35,11 @@ class FrameDecoder:
                 self.total_frames = max_frames
         print(f"Total frames: {self.total_frames}")
         self.qcluster = QCluster()
-        self.vidstate = VidState(video_path=video_path, frame_count=self.total_frames)
+        self.state = ProjectState(video_path=video_path, frame_count=self.total_frames)
+
+    @classmethod
+    def for_project(cls, project: ProjectState):
+        return cls(video_path=project.video_path, max_frames=project.frame_count)
 
     def __len__(self):
         return self.total_frames
@@ -47,34 +51,32 @@ class FrameDecoder:
         print(f"Scanning video, embedding frames")
         progress = tqdm(range(self.total_frames), desc="Extracting frames")
         for frame_num in progress:
-            ret, bgr_frame = self.cap.read()
+            ret, frame = self.cap.read()
             if not ret:
                 break
-            frame = self.preprocess_frame(bgr_frame)
+            frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
         print("Scan complete, clustering frames")
         order = self.qcluster.diversity_order()
         for i, frame_num in enumerate(order):
-            self.vidstate.update_frame_metadata(num=frame_num, diversity_rank=i)
+            self.state.update_frame_metadata(num=frame_num, diversity_rank=i)
         N = self.total_frames
-        self.sorted_indices = sorted(range(N), key=lambda i: self.vidstate.get_frame_metadata(i).md["diversity_rank"])
+        self.sorted_indices = sorted(range(N), key=lambda i: self.state.get_frame_metadata(i).md["diversity_rank"])
         print(f"Clustering complete.  Found {len(self.sorted_indices)} clusters")
 
-    def preprocess_frame(self, bgr_frame: np.ndarray) -> np.ndarray:
+    def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
         # check if it has too many pixels.  Max of 0.5MP
-        if bgr_frame.shape[0] * bgr_frame.shape[1] > 500000:
-            bgr_frame = cv2.resize(bgr_frame, (800, 600))
-        # convert colors to RGB
-        #return cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
-        return bgr_frame
+        if frame.shape[0] * frame.shape[1] > 500000:
+            frame = cv2.resize(frame, (800, 600))
+        return frame
 
     def fmd_by_rank(self, rank: int) -> dict:
         """Get the frame by rank.
         :return: fmd dict with frame, metadata, and frame number
         """
         frame_num = self.sorted_indices[rank]
-        fmd = self.vidstate.get_frame_metadata(frame_num)
+        fmd = self.state.get_frame_metadata(frame_num)
         out = {
             "pil_img": Image.fromarray(self.get_frame(frame_num)),
             "frame": self.get_frame(frame_num),
@@ -83,14 +85,6 @@ class FrameDecoder:
         out.update(fmd.md)
         return out
 
-
-    def show_top_frames(self, num_frames: int = 10):
-        """Show the top frames."""
-        for i in range(num_frames):
-            frame_num = self.sorted_indices[i]
-            fmd = self.fmd_by_rank(i)
-            print(f"Frame {fmd['frame_num']}: {fmd['diversity_rank']}")
-            imgcat(fmd["frame"])
 
     def get_frame(self, frame_num: int) -> np.ndarray:
         """Get the frame from the video given the frame number.
