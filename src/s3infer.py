@@ -4,10 +4,12 @@ This script takes a video and a detector, and runs the detector on each frame.
 It stores the results as metadata on each frame.
 """
 import argparse
-from framemgr import FrameManager
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
 from tqdm.auto import tqdm
+
+from projstate import ProjectState
+from framemgr import FrameManager
 
 
 def get_iq_answer(iq: ImageQuery) -> str:
@@ -51,12 +53,12 @@ def run_detector(decoder: FrameManager, detector_id: str, confidence_threshold: 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("video_path", type=str, help="Path to the input video file")
-    parser.add_argument("--max-frames", type=int, default=0, help="Maximum number of frames to use")
+    parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--detector-id", type=str, required=True, help="ID of the detector to use")
     parser.add_argument("--confidence-threshold", type=float, default=None, help="Confidence threshold for inference (overrides detector's value)")
     args = parser.parse_args()
 
-    decoder = FrameManager(video_path=args.video_path, max_frames=args.max_frames)
+    project = ProjectState.load(args.project_dir)
+    decoder = FrameManager.for_project(project)
     answers = run_detector(decoder, args.detector_id, args.confidence_threshold)
-    decoder.save_metadata()
+    project.save()
