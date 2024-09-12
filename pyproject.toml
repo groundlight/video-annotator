@@ -13,16 +13,18 @@ groundlight = "^0.17.1"
 framegrab = "^0.7.0"
 imgcat = "^0.5.0"
 tqdm = "^4.66.5"
-torch = "^2.4.1+cpu"
-torchvision = "^0.19.1+cpu"
+torch = { version = "^2.4.1+cpu", source = "pytorch" }
+torchvision = { version = "^0.19.1+cpu", source = "pytorch" }
 scikit-learn = "^1.5.1"
 
 [[tool.poetry.source]]
 name = "pypi"
+priority = "default"
 
 [[tool.poetry.source]]
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
 
 [build-system]
 requires = ["poetry-core"]
