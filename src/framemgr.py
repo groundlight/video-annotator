@@ -57,7 +57,7 @@ class FrameManager:
         and clusters the frames for diversity.
         """
         print(f"Scanning video, embedding frames")
-        progress = tqdm(range(self.total_frames), desc="Extracting frames")
+        progress = tqdm(range(self.total_frames), desc="Embedding frames")
         for frame_num in progress:
             ret, frame = self.cap.read()
             if not ret:

@@ -29,14 +29,25 @@ def get_iq_answer(iq: ImageQuery) -> str:
         return "NONE"
 
 
-def run_detector(decoder: FrameManager, detector_id: str, confidence_threshold: float | None, verbose: bool = False):
+def run_detector(decoder: FrameManager, *, 
+    detector_id: str, 
+    confidence_threshold: float | None, 
+    verbose: bool = False, 
+    max_frames: int | None = None,
+):
     """Feed each frame through the detector, and record the results.
     """
     gl = Groundlight()
     detector = gl.get_detector(detector_id)
     answers = []
-    for frame_num in tqdm(range(len(decoder)), desc="Inference"):
-        frame = decoder.get_frame(frame_num)
+    N = min(len(decoder), max_frames) if max_frames else len(decoder)
+    for frame_num in tqdm(range(N), desc="Inference"):
+        framedat = decoder.framedat_by_num(frame_num)
+        if "answer" in framedat:
+            if verbose:
+                print(f"Frame {frame_num} already answered: {framedat['answer']}")
+            continue
+        frame = framedat["pil_img"]
         iq = gl.ask_ml(detector, frame)
         answer = get_iq_answer(iq)
         if verbose:
@@ -56,9 +67,16 @@ if __name__ == "__main__":
     parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--detector-id", type=str, required=True, help="ID of the detector to use")
     parser.add_argument("--confidence-threshold", type=float, default=None, help="Confidence threshold for inference (overrides detector's value)")
+    parser.add_argument("--max-frames", type=int, default=None, help="Maximum number of frames to use")
+    parser.add_argument("--verbose", action="store_true", help="Print verbose output")
     args = parser.parse_args()
 
     project = ProjectState.load(args.project_dir)
     decoder = FrameManager.for_project(project)
-    answers = run_detector(decoder, args.detector_id, args.confidence_threshold)
+    answers = run_detector(decoder, 
+        detector_id=args.detector_id, 
+        confidence_threshold=args.confidence_threshold, 
+        verbose=args.verbose, 
+        max_frames=args.max_frames
+    )
     project.save()
