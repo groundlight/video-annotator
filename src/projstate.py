@@ -71,14 +71,12 @@ class ProjectState():
     """
     video_path: str
     project_dir: str
-    frame_count: int
     frame_metadata: FrameListMetadata
 
-    def __init__(self, video_path: str, project_dir: str, frame_count: int = 0):
+    def __init__(self, video_path: str, project_dir: str):
         self.video_path = video_path
         self.project_dir = project_dir
         self.frame_metadata = FrameListMetadata()
-        self.frame_count = frame_count
 
     def subdir(self, name: str) -> str:
         """Get the path to a subdirectory of the project directory.
@@ -92,7 +90,6 @@ class ProjectState():
         """
         out = {
             "video_path": self.video_path,
-            "frame_count": self.frame_count,
         }
         return out
 

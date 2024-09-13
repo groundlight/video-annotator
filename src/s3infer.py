@@ -7,6 +7,7 @@ import argparse
 from typing import Callable
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
+from imgcat import imgcat
 from tqdm.auto import tqdm
 
 from projstate import ProjectState
@@ -43,20 +44,29 @@ def run_detector(decoder: FrameManager, *,
     detector = gl.get_detector(detector_id)
     answers = []
     N = min(len(decoder), max_frames) if max_frames else len(decoder)
-    for frame_num in tqdm(range(N), desc="Inference"):
-        framedat = decoder.framedat_by_num(frame_num)
-        if "answer" in framedat:
+    if verbose:
+        progress = range(N)
+    else:
+        progress = tqdm(range(N), desc="Inference")
+    for frame_num in progress:
+        md = decoder.metadata.get_frame_metadata(frame_num)
+        if md.get("answer"):
             if verbose:
-                print(f"Frame {frame_num} already answered: {framedat['answer']}")
+                print(f"Frame {frame_num} already answered: {md['answer']}")
             continue
+        framedat = decoder.framedat_by_num(frame_num)
         frame = framedat["pil_img"]
         iq = gl.ask_ml(detector, frame)
         answer = get_iq_answer(iq)
         if verbose:
-            print(f"Frame {frame_num}: {iq.result}")
+            # Note: imgcat and tqdm don't exactly play nicely together.
+            # so we should have disabled tqdm if we're in verbose mode.
+            imgcat(frame)
+            print(f"Frame {frame_num}: {answer}")
         md = {
             "answer": answer,
             "answer_confidence": iq.result.confidence,
+            "raw_label": iq.result.label,
             "iq_id": iq.id,
         }
         decoder.set_metadata(frame_num, **md)
