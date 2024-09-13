@@ -4,6 +4,7 @@ This script takes a video and a detector, and runs the detector on each frame.
 It stores the results as metadata on each frame.
 """
 import argparse
+from typing import Callable
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
 from tqdm.auto import tqdm
@@ -34,6 +35,7 @@ def run_detector(decoder: FrameManager, *,
     confidence_threshold: float | None, 
     verbose: bool = False, 
     max_frames: int | None = None,
+    save_callback: Callable | None = None,
 ):
     """Feed each frame through the detector, and record the results.
     """
@@ -59,6 +61,9 @@ def run_detector(decoder: FrameManager, *,
         }
         decoder.set_metadata(frame_num, **md)
         answers.append(answer)
+        if save_callback:
+            if frame_num % 10 == 0:
+                save_callback()
     return answers
 
 
@@ -73,10 +78,13 @@ if __name__ == "__main__":
 
     project = ProjectState.load(args.project_dir)
     decoder = FrameManager.for_project(project)
+    def save_callback():
+        project.save()
     answers = run_detector(decoder, 
         detector_id=args.detector_id, 
         confidence_threshold=args.confidence_threshold, 
         verbose=args.verbose, 
-        max_frames=args.max_frames
+        max_frames=args.max_frames,
+        save_callback=save_callback,
     )
     project.save()
