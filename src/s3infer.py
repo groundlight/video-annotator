@@ -4,6 +4,7 @@ This script takes a video and a detector, and runs the detector on each frame.
 It stores the results as metadata on each frame.
 """
 import argparse
+import time
 from typing import Callable, Optional
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
