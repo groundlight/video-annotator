@@ -4,7 +4,7 @@ This script takes a video and a detector, and runs the detector on each frame.
 It stores the results as metadata on each frame.
 """
 import argparse
-from typing import Callable
+from typing import Callable, Optional
 
 from groundlight import Groundlight, ImageQuery, BinaryClassificationResult
 from imgcat import imgcat
@@ -33,10 +33,10 @@ def get_iq_answer(iq: ImageQuery) -> str:
 
 def run_detector(decoder: FrameManager, *, 
     detector_id: str, 
-    confidence_threshold: float | None, 
     verbose: bool = False, 
-    max_frames: int | None = None,
-    save_callback: Callable | None = None,
+    max_frames: Optional[int] = None,
+    save_callback: Optional[Callable] = None,
+    delay: float = 1.0,
 ):
     """Feed each frame through the detector, and record the results.
     """
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--detector-id", type=str, required=True, help="ID of the detector to use")
-    parser.add_argument("--confidence-threshold", type=float, default=None, help="Confidence threshold for inference (overrides detector's value)")
     parser.add_argument("--max-frames", type=int, default=None, help="Maximum number of frames to use")
+    parser.add_argument("--delay", type=float, default=1.0, help="Delay between frames in seconds")
     parser.add_argument("--verbose", action="store_true", help="Print verbose output")
     args = parser.parse_args()
 
@@ -92,9 +92,9 @@ if __name__ == "__main__":
         project.save()
     answers = run_detector(decoder, 
         detector_id=args.detector_id, 
-        confidence_threshold=args.confidence_threshold, 
         verbose=args.verbose, 
         max_frames=args.max_frames,
+        delay=args.delay,
         save_callback=save_callback,
     )
     project.save()

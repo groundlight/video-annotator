@@ -2,6 +2,7 @@
 import argparse
 import os
 import json
+from Typing import Optional
 
 from PIL import Image
 from imgcat import imgcat
@@ -17,7 +18,7 @@ class FrameManager:
     """Analyzes all the frames in a video, recording metadata about them.
     """
 
-    def __init__(self, video_path: str, max_frames: int = 0, frame_metadata: FrameListMetadata | None = None):
+    def __init__(self, video_path: str, max_frames: int = 0, frame_metadata: Optional[FrameListMetadata] = None):
         """
         Args:
             :video_path (str): Path to the input video file.
