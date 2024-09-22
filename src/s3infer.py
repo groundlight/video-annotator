@@ -74,6 +74,7 @@ def run_detector(decoder: FrameManager, *,
         if save_callback:
             if frame_num % 10 == 0:
                 save_callback()
+        time.sleep(delay)
     return answers
 
 
