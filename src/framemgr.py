@@ -2,7 +2,7 @@
 import argparse
 import os
 import json
-from Typing import Optional
+from typing import Optional
 
 from PIL import Image
 from imgcat import imgcat
