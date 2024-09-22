@@ -61,6 +61,8 @@ class FrameManager:
         for frame_num in progress:
             ret, frame = self.cap.read()
             if not ret:
+                print(f"Warning: didn't get frame {frame_num}")
+                self.total_frames = frame_num
                 break
             frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
@@ -79,9 +81,9 @@ class FrameManager:
 
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
-        # check if it has too many pixels.  Max of 0.5MP
-        if frame.shape[0] * frame.shape[1] > 500000:
-            frame = cv2.resize(frame, (800, 600))
+        # check if it has too many pixels.  For this we only need like 120k
+        if frame.shape[0] * frame.shape[1] > 120000:
+            frame = cv2.resize(frame, (400, 300))
         return frame
 
     def framedat_by_rank(self, rank: int) -> dict:

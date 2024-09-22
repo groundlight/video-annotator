@@ -4,6 +4,7 @@ Waits for confident answers, which generally means human review.
 All is done in diversity order, so the frames are spread out.
 """
 import argparse
+import time
 
 from groundlight import Groundlight
 from imgcat import imgcat
@@ -44,6 +45,23 @@ def submit_to_model(detector, fmd: dict, ask_async: bool = False):
         )
     print(response)
 
+def submit_to_model_retry(detector, fmd: dict, ask_async: bool = False):
+    """Takes the frame-metadata dict and submits the frame to the model.
+    """
+    delay = 5
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            submit_to_model(detector, fmd, ask_async=ask_async)
+            break
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                raise e
+            import pdb; pdb.set_trace()
+            print(f"Error submitting frame {fmd['frame_num']}: {e}.  Pausing for {delay} seconds.")
+            time.sleep(delay)
+            delay *= 2
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -61,4 +79,4 @@ if __name__ == "__main__":
     detector = build_detector(args.query, args.confidence)
     for i in range(args.skip_frames, args.skip_frames + args.num_frames):
         fmd = decoder.framedat_by_rank(i)
-        submit_to_model(detector, fmd, ask_async=args.ask_async)
+        submit_to_model_retry(detector, fmd, ask_async=args.ask_async)
