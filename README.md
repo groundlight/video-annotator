@@ -33,3 +33,17 @@ direnv allow .
 conda activate video-annotator  # Should be automatic and unneeded
 poetry install
 ```
+
+
+# Troubleshooting
+
+## Installation errors
+
+### libGL.so.1: cannot open shared object file: No such file or directory
+
+On Ubuntu, if you get an error about `libGL`, you may need to install the libgl1-mesa-glx package:
+
+```
+sudo apt update
+sudo apt install -y libgl1-mesa-glx
+```
