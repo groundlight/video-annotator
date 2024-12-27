@@ -86,7 +86,6 @@ if __name__ == "__main__":
     parser.add_argument("--num-frames", type=int, default=100, help="Number of frames to submit to the model")
     parser.add_argument("--skip-frames", type=int, default=0, help="Number of frames to skip")
     parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
-    parser.add_argument("--cloud-labeling", action="store_true", help="Each query will be escalated to a human labeler in the cloud. If disabled, you will be required to label queries.")
     parser.add_argument(
         "--human-review", 
         type=str, 
