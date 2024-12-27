@@ -21,7 +21,7 @@ def build_detector(query: str, confidence: float):
     return det
 
 
-def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, cloud_labeling: bool) -> bool:
+def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> bool:
     """Takes the frame-metadata dict and submits the frame to the model.
     """
     print(f"\n\n")
@@ -30,13 +30,17 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, cloud_lab
     iq_metadata = {
         "frame_num": fmd["frame_num"],
     }
-    human_review = "ALWAYS" if cloud_labeling else "NEVER"
     url = f"https://dashboard.groundlight.ai/reef/review/queue/detector/{detector.id}"
     
-    if cloud_labeling:
+    if human_review == "ALWAYS":
         message = f"Image submitted to cloud labeler. If you wish to review yourself, you can open this URL:\n\t{url}"
-    else:
+    elif human_review == "DEFAULT":
+        message = f'Image submitted with default escalation behavior. Image will only escalate to cloud labeler if the ML result is not confident. If you wish to review yourself, you can open this URL:\n\t{url}'
+    elif human_review == "NEVER":
         message = f"Open the following URL in a browser to review the image:\n\t{url}"
+    else:
+        raise ValueError(f'Unexpected value for human_review: {human_review}')
+    
     print(message)
     
     if ask_async:
@@ -51,14 +55,14 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, cloud_lab
         )
     print(response)
 
-def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, cloud_labeling: bool) -> None:
+def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> None:
     """Takes the frame-metadata dict and submits the frame to the model.
     """
     delay = 5
     max_attempts = 5
     for attempt in range(max_attempts):
         try:
-            submit_to_model(detector, fmd, ask_async=ask_async, wait=wait, cloud_labeling=cloud_labeling)
+            submit_to_model(detector, fmd, ask_async=ask_async, wait=wait, human_review=human_review)
             break
         except Exception as e:
             if attempt == max_attempts - 1:
@@ -83,6 +87,14 @@ if __name__ == "__main__":
     parser.add_argument("--skip-frames", type=int, default=0, help="Number of frames to skip")
     parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
     parser.add_argument("--cloud-labeling", action="store_true", help="Each query will be escalated to a human labeler in the cloud. If disabled, you will be required to label queries.")
+    parser.add_argument(
+        "--human-review", 
+        type=str, 
+        default="NEVER", 
+        choices=["NEVER", "ALWAYS", "DEFAULT"], 
+        help="Specifies the cloud labeling behavior. Options are: 'NEVER' (never escalates to cloud labelers), 'ALWAYS' (always escalates), or 'DEFAULT' (only escalates ML answer is not confident)."
+        )
+
     args = parser.parse_args()
 
     project = ProjectState.load(args.project_dir)
@@ -101,4 +113,4 @@ if __name__ == "__main__":
     
     for i in range(args.skip_frames, args.skip_frames + args.num_frames):
         fmd = decoder.framedat_by_rank(i)
-        submit_to_model_retry(detector, fmd, ask_async=args.ask_async, wait=args.wait, cloud_labeling=args.cloud_labeling)
+        submit_to_model_retry(detector, fmd, ask_async=args.ask_async, wait=args.wait, human_review=args.human_review)
