@@ -11,6 +11,8 @@ from tqdm.auto import tqdm
 from framemgr import FrameManager
 from projstate import ProjectState
 
+
+
 def project_dir_from_filename(filename: str) -> str:
     """Get the project directory from the filename.
     """
@@ -52,12 +54,17 @@ if __name__ == "__main__":
     parser.add_argument("--max-frames", type=int, default=0, help="Maximum number of frames to analyze")
     parser.add_argument("--show-frames", type=int, default=10, help="Show the N most diverse sample frames")
     parser.add_argument("--save-frames", type=int, default=10, help="Save the N most diverse sample frames to the project directory")
+    parser.add_argument("--just-info", action="store_true", help="Just print the video metadata and exit")
     args = parser.parse_args()
 
     proj_dir = args.project_dir or project_dir_from_filename(args.video_path)
     project = ProjectState(project_dir=proj_dir, video_path=args.video_path)
 
     decoder = FrameManager(video_path=args.video_path, max_frames=args.max_frames)
+    if args.just_info:
+        decoder.print_metadata()
+        exit(0)
+
     decoder.analyze()
 
     if args.show_frames > 0:

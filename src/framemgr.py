@@ -12,6 +12,7 @@ import numpy as np
 
 from qcluster import QCluster
 from projstate import ProjectState, FrameListMetadata
+from lilutil import print_cvcap_metadata
 
 
 class FrameManager:
@@ -52,6 +53,9 @@ class FrameManager:
         return out
     def __len__(self):
         return self.total_frames
+
+    def print_metadata(self):
+        print_cvcap_metadata(self.video_path)
 
     def analyze(self):
         """Analyzes the video frame by frame.  Calculates embeddings, 
