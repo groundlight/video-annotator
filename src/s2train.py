@@ -17,7 +17,7 @@ gl = Groundlight()
 def build_detector(query: str, confidence: float):
     name = query[:20]  # would be nice if I didn't have to name the detector
     det = gl.get_or_create_detector(name=name, query=query, confidence_threshold=confidence)
-    print(f"Detector {det} being used")
+    print(f"Detector {det.id} being used")
     return det
 
 
@@ -41,6 +41,7 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
     else:
         raise ValueError(f'Unexpected value for human_review: {human_review}')
     
+    print('-' * 50)
     print(message)
     
     if ask_async:

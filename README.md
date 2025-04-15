@@ -1,5 +1,7 @@
 # Video Annotator
 
+The Video Annotator allows you to efficiently extract images from videos and send them to Groundlight for annotation and training. Video Annotator uses clustering to find a diverse set of images that will train your Groundlight detector to a high confidence level with minimal annotation effort. 
+
 ## Annotating a video
 
 After you set up your environment (see below), you can run the following commands to build a CV model and annotate a video.  Everything is stored in your project directory, so you can pick up where you left off.
@@ -34,10 +36,7 @@ conda activate video-annotator  # Should be automatic and unneeded
 poetry install
 ```
 
-
-# Troubleshooting
-
-## Installation errors
+## Troubleshooting
 
 ### libGL.so.1: cannot open shared object file: No such file or directory
 

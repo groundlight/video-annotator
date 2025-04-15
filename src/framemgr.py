@@ -28,17 +28,19 @@ class FrameManager:
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        if max_frames:
-            if max_frames < self.total_frames:
-                print(f"Limiting to {max_frames} frames.  Original frame count: {self.total_frames}")
-                self.total_frames = max_frames
-        print(f"Total frames: {self.total_frames}")
+        self.max_frames = max_frames
+        if max_frames and max_frames < self.total_frames:
+            print(f"Limiting to {self.max_frames} frames.  Original frame count: {self.total_frames}")
+        else:
+            print(f'Using all available frames in video: {self.total_frames} frames')
+            
         self.qcluster = QCluster()
         if frame_metadata is None:
             self.metadata = FrameListMetadata()
         else:
             self.metadata = frame_metadata
         self.frame_diversity_order = None
+        self.processed_frame_nums = []  # Track successfully processed frame numbers
 
     @classmethod
     def for_project(cls, project: ProjectState):
@@ -50,23 +52,28 @@ class FrameManager:
         out = cls(**args)
         out._update_frame_diversity_order()
         return out
+
     def __len__(self):
-        return self.total_frames
+        return len(self.processed_frame_nums)
 
     def analyze(self):
         """Analyzes the video frame by frame.  Calculates embeddings, 
         and clusters the frames for diversity.
         """
         print(f"Scanning video, embedding frames")
-        progress = tqdm(range(self.total_frames), desc="Embedding frames")
+        
+        # Evenly space the frames across the entire video
+        frame_indices = np.linspace(0, self.total_frames - 1, min(self.total_frames, self.max_frames)).astype(int)
+        progress = tqdm(frame_indices, desc="Embedding frames")
         for frame_num in progress:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = self.cap.read()
             if not ret:
                 print(f"Warning: didn't get frame {frame_num}")
-                self.total_frames = frame_num
                 break
             frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
+            self.processed_frame_nums.append(frame_num)
         print("Scan complete, clustering frames")
         cluster_info = self.qcluster.analyze()
         for entry in cluster_info:
@@ -75,11 +82,11 @@ class FrameManager:
         print(f"Clustering complete.  Found {len(self.qcluster)} clusters")
 
     def _update_frame_diversity_order(self):
-        N = self.total_frames
+        N = len(self.metadata)
         def get_diversity_rank(i):  # just used by lambda below
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
-        self.frame_diversity_order = sorted(range(N), key=get_diversity_rank)
-
+        self.frame_diversity_order = sorted(self.processed_frame_nums, key=get_diversity_rank)
+        
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
         # check if it has too many pixels.  For this we only need like 120k
@@ -126,5 +133,4 @@ class FrameManager:
             raise ValueError(f"Error reading frame {frame_num}")
         # swap bgr to rgb
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
-        return self.preprocess_frame(rgb_frame)
-
+        return rgb_frame
