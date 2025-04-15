@@ -84,8 +84,9 @@ class FrameManager:
     def _update_frame_diversity_order(self):
         N = len(self.metadata)
         def get_diversity_rank(i):  # just used by lambda below
+            print('self.metadata.get_frame_metadata(i)', self.metadata.get_frame_metadata(i))
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
-        self.frame_diversity_order = sorted(self.processed_frame_nums, key=get_diversity_rank)
+        self.frame_diversity_order = sorted(range(N), key=get_diversity_rank)
         
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
@@ -101,6 +102,8 @@ class FrameManager:
             - frame: numpy array of the frame
             - frame_num: the frame number
         """
+        print(len(self.frame_diversity_order))
+        print(rank)
         frame_num = self.frame_diversity_order[rank]
         return self.framedat_by_num(frame_num)
 
