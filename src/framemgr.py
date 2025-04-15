@@ -3,6 +3,7 @@ import argparse
 import os
 import json
 from typing import Optional
+from typing import Iterator
 
 from PIL import Image
 from imgcat import imgcat
@@ -28,11 +29,14 @@ class FrameManager:
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
         self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.max_frames = max_frames
-        if max_frames and max_frames < self.total_frames:
-            print(f"Limiting to {self.max_frames} frames.  Original frame count: {self.total_frames}")
+        
+        # Determine the number of frames to use based on the total number of frames in the provided video
+        # and the maximum frames requested by the user        
+        if max_frames == 0:
+            self.num_frames_to_use = self.total_frames
         else:
-            print(f'Using all available frames in video: {self.total_frames} frames')
+            self.num_frames_to_use = min(max_frames, self.total_frames)
+            print(f'Using {self.num_frames_to_use} of {self.total_frames} available frames.')
             
         self.qcluster = QCluster()
         if frame_metadata is None:
@@ -40,7 +44,6 @@ class FrameManager:
         else:
             self.metadata = frame_metadata
         self.frame_diversity_order = None
-        self.processed_frame_nums = []  # Track successfully processed frame numbers
 
     @classmethod
     def for_project(cls, project: ProjectState):
@@ -52,19 +55,27 @@ class FrameManager:
         out = cls(**args)
         out._update_frame_diversity_order()
         return out
+    
+    def frame_indices_to_use(self) -> Iterator[int]:
+        """
+        Based on the length of the whole video and the number of frames that we actually want to use, generate
+        the indices of the frames to use.
+        """
+        for i in range(self.num_frames_to_use):
+            idx = int(round(i * (self.total_frames - 1) / (self.num_frames_to_use - 1)))
+            yield idx
 
     def __len__(self):
-        return len(self.processed_frame_nums)
+        return self.num_frames_to_use
 
     def analyze(self):
         """Analyzes the video frame by frame.  Calculates embeddings, 
         and clusters the frames for diversity.
         """
-        print(f"Scanning video, embedding frames")
+        print(f"Scanning video and embedding frames...")
         
         # Evenly space the frames across the entire video
-        frame_indices = np.linspace(0, self.total_frames - 1, min(self.total_frames, self.max_frames)).astype(int)
-        progress = tqdm(frame_indices, desc="Embedding frames")
+        progress = tqdm(self.frame_indices_to_use(), desc="Embedded frames")
         for frame_num in progress:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = self.cap.read()
@@ -73,20 +84,18 @@ class FrameManager:
                 break
             frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
-            self.processed_frame_nums.append(frame_num)
-        print("Scan complete, clustering frames")
+            
+        print("Scan complete, clustering frames...")
         cluster_info = self.qcluster.analyze()
         for entry in cluster_info:
             self.metadata.update_frame_metadata(num=entry["id"], diversity_rank=entry["diversity_rank"], cluster=entry["cluster"])
         self._update_frame_diversity_order()
-        print(f"Clustering complete.  Found {len(self.qcluster)} clusters")
+        print(f"Clustering complete. Found {len(self.qcluster)} clusters")
 
     def _update_frame_diversity_order(self):
-        N = len(self.metadata)
         def get_diversity_rank(i):  # just used by lambda below
-            print('self.metadata.get_frame_metadata(i)', self.metadata.get_frame_metadata(i))
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
-        self.frame_diversity_order = sorted(range(N), key=get_diversity_rank)
+        self.frame_diversity_order = sorted(self.frame_indices_to_use(), key=get_diversity_rank)
         
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
@@ -102,8 +111,6 @@ class FrameManager:
             - frame: numpy array of the frame
             - frame_num: the frame number
         """
-        print(len(self.frame_diversity_order))
-        print(rank)
         frame_num = self.frame_diversity_order[rank]
         return self.framedat_by_num(frame_num)
 

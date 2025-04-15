@@ -85,7 +85,6 @@ if __name__ == "__main__":
     parser.add_argument("--confidence", type=float, default=0.75, help="Confidence threshold for the model")
     parser.add_argument("--wait", type=float, default=120.0, help="The amount of time to wait for a confident answer.")
     parser.add_argument("--num-frames", type=int, default=100, help="Number of frames to submit to the model")
-    parser.add_argument("--skip-frames", type=int, default=0, help="Number of frames to skip")
     parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
     parser.add_argument(
         "--human-review", 
@@ -109,8 +108,38 @@ if __name__ == "__main__":
             gl.update_detector_confidence_threshold(detector, args.confidence)
             print(f"Updated {detector.id}'s confidence threshold to {args.confidence}")
             
-    print(f'Using detector {detector}')
+    detector_id = detector.id
+    num_previously_submitted_frames = project.get_num_previously_submitted_frames(detector_id)
     
-    for i in range(args.skip_frames, args.skip_frames + args.num_frames):
-        fmd = decoder.framedat_by_rank(i)
-        submit_to_model_retry(detector, fmd, ask_async=args.ask_async, wait=args.wait, human_review=args.human_review)
+    num_frames = min(args.num_frames, len(decoder))
+    print(f'Previously submitted {num_previously_submitted_frames} frames to detector {detector_id}. Submitting {num_frames} frames more...')
+    
+    i = 0
+    num_submitted_frames = 0
+    while True:
+        # Get the next clustered frame by diversity rank
+        try:
+            fmd = decoder.framedat_by_rank(i)
+            i += 1
+        except IndexError:
+            print(
+                f'Reached the end of available clustered frames. Was only able to submit {num_submitted_frames} of the requested {num_frames} frames.'
+                )
+            break
+        
+        # Check if the frame has already been submitted
+        frame_num = fmd["frame_num"]
+        if project.check_frame_submission(frame_num, detector_id):
+            continue # Frame has already been submitted. Skipping...
+            
+        # Submit the frame and log the submission
+        try:
+            submit_to_model_retry(detector, fmd, ask_async=args.ask_async, wait=args.wait, human_review=args.human_review)
+        finally:
+            project.log_frame_submission(frame_num, detector_id)
+            num_submitted_frames += 1
+        
+        # Check if we have submitted the requested number of frames
+        if num_submitted_frames == num_frames:
+            print(f'Finshed submitting {num_frames} frames to {detector_id}.')
+            break
