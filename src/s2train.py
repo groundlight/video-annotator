@@ -24,9 +24,6 @@ def build_detector(query: str, confidence: float):
 def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> bool:
     """Takes the frame-metadata dict and submits the frame to the model.
     """
-    print(f"\n\n")
-    imgcat(fmd["pil_img"])
-    print(f"Submitting frame {fmd['frame_num']} to model.")
     iq_metadata = {
         "frame_num": fmd["frame_num"],
     }
@@ -42,8 +39,12 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
         raise ValueError(f'Unexpected value for human_review: {human_review}')
     
     print('-' * 50)
+    print("\n\n")
+    imgcat(fmd["pil_img"])
+    print(f"Submitting frame {fmd['frame_num']} to model.")
     print(message)
     
+    t1 = time.time()
     if ask_async:
         response = gl.ask_async(detector, fmd["pil_img"], human_review=human_review)
     else:
@@ -54,6 +55,9 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
             human_review=human_review, 
             metadata=iq_metadata,
         )
+    t2 = time.time()
+    elapsed_time = t2 - t1
+    print(f'Got a result in {elapsed_time:.2f} seconds.')
     print(response)
 
 def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> None:
