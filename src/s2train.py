@@ -6,13 +6,30 @@ All is done in diversity order, so the frames are spread out.
 import argparse
 import time
 
-from groundlight import Groundlight
+from groundlight import Groundlight, ImageQuery, CountingResult, BinaryClassificationResult
 from imgcat import imgcat
 
-from projstate import ProjectState
-from framemgr import FrameManager
+def pprint_iq(iq: ImageQuery) -> None:
+    print(f'"{iq.query}"')
+    print(f'ID: {iq.id}')
 
-gl = Groundlight()
+    # Detector mode-specific attributes
+    if isinstance(iq.result, CountingResult):
+        print(f'Count : {iq.result.count}')
+    elif isinstance(iq.result, BinaryClassificationResult):
+        label = '-' if iq.result is None else iq.result.label.value
+        print(f'Label: {label}')
+    else:
+        raise ValueError(
+            f'Unsupported result type: {type(iq.result)}'
+        )
+        
+    confidence = None if iq.result is None else iq.result.confidence
+    confidence_str = '-' if confidence is None else f'{confidence * 100:.2f}%'
+    print(f'Confidence: {confidence_str}')
+    
+    source = '-' if iq.result is None else iq.result.source.value
+    print(f'Source: {source}')
 
 def build_detector(query: str, confidence: float):
     name = query[:20]  # would be nice if I didn't have to name the detector
@@ -39,26 +56,43 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
         raise ValueError(f'Unexpected value for human_review: {human_review}')
     
     print('-' * 50)
-    print("\n\n")
-    imgcat(fmd["pil_img"])
     print(f"Submitting frame {fmd['frame_num']} to model.")
     print(message)
+    imgcat(fmd["pil_img"])
+    print("")
+    print("")
     
     t1 = time.time()
     if ask_async:
-        response = gl.ask_async(detector, fmd["pil_img"], human_review=human_review)
+        iq = gl.ask_async(detector, fmd["pil_img"], human_review=human_review)
+        print(f'Submitted {iq.id} asynchonously to Groundlight.')
     else:
-        response = gl.submit_image_query(
-            detector, 
-            fmd["pil_img"],  
-            wait=wait, 
-            human_review=human_review, 
-            metadata=iq_metadata,
-        )
+        iq = gl.submit_image_query(detector, fmd["pil_img"], wait=0.0, human_review=human_review, metadata=iq_metadata)
+        
+        confidence = 0.0 if iq.result.confidence is None else iq.result.confidence
+        confidence_threshold = detector.confidence_threshold
+        if human_review == "ALWAYS":
+            print('-' * 5 + "ML Result" + '-' * 5)
+            pprint_iq(iq)
+            print(f'human_review set to "ALWAYS". Waiting for human answer...')
+            human_confidence = 1.0
+            iq = gl.wait_for_confident_result(iq, confidence_threshold=human_confidence, timeout_sec=wait)
+        elif human_review == "DEFAULT" and confidence < confidence_threshold:
+            print('-' * 5 + "Preliminary ML Result" + '-' * 5)
+            pprint_iq(iq)
+            print(
+                f'human_review is set to "DEFAULT" and the preliminary ML confidence ({confidence:.4f}) was below '
+                f'the confidence threshold ({confidence_threshold:.4f}). Escalating {iq.id} to cloud labeler...'
+                )
+            iq = gl.wait_for_confident_result(iq, confidence_threshold=confidence_threshold, timeout_sec=wait)
+            
+        print('-' * 5 + "Final Result" + '-' * 5)
+        pprint_iq(iq)
+        
     t2 = time.time()
     elapsed_time = t2 - t1
-    print(f'Got a result in {elapsed_time:.2f} seconds.')
-    print(response)
+    
+    print(f'Result returned in {elapsed_time:.2f} seconds.')
 
 def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> None:
     """Takes the frame-metadata dict and submits the frame to the model.
@@ -72,7 +106,7 @@ def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, hum
         except Exception as e:
             if attempt == max_attempts - 1:
                 raise e
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
             print(f"Error submitting frame {fmd['frame_num']}: {e}.  Pausing for {delay} seconds.")
             time.sleep(delay)
             delay *= 2
@@ -99,7 +133,14 @@ if __name__ == "__main__":
         )
 
     args = parser.parse_args()
-
+    
+    # Connect to Groundlight client
+    gl = Groundlight()
+    
+    # Deferring these expensive imports to make the CLI more responsive
+    from projstate import ProjectState
+    from framemgr import FrameManager
+        
     project = ProjectState.load(args.project_dir)
     decoder = FrameManager.for_project(project)
     

@@ -25,6 +25,7 @@ class FrameManager:
             :video_path (str): Path to the input video file.
         """
         self.video_path = video_path
+        print(video_path)
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
@@ -36,7 +37,7 @@ class FrameManager:
             self.num_frames_to_use = self.total_frames
         else:
             self.num_frames_to_use = min(max_frames, self.total_frames)
-            print(f'Using {self.num_frames_to_use} of {self.total_frames} available frames.')
+            print(f'Using a cluster of {self.num_frames_to_use} frame of {self.total_frames} available frames.')
             
         self.qcluster = QCluster()
         if frame_metadata is None:
