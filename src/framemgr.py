@@ -29,7 +29,7 @@ class FrameManager:
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
-        # self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
         self.total_frames = self.get_actual_frame_count()
         
         # Determine the number of frames to use based on the total number of frames in the provided video
@@ -38,7 +38,7 @@ class FrameManager:
             self.num_frames_to_use = self.total_frames
         else:
             self.num_frames_to_use = min(max_frames, self.total_frames)
-            print(f'Using a cluster of {self.num_frames_to_use} frames of {self.total_frames} total video frames.')
+        print(f'Using a cluster of {self.num_frames_to_use} frames of {self.total_frames} total video frames.')
             
         self.qcluster = QCluster()
         if frame_metadata is None:
