@@ -15,7 +15,7 @@ def pprint_iq(iq: ImageQuery) -> None:
 
     # Detector mode-specific attributes
     if isinstance(iq.result, CountingResult):
-        print(f'Count : {iq.result.count}')
+        print(f'Count: {iq.result.count}')
     elif isinstance(iq.result, BinaryClassificationResult):
         label = '-' if iq.result is None else iq.result.label.value
         print(f'Label: {label}')
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     while True:
         # Get the next clustered frame by diversity rank
         try:
-            fmd = decoder.framedat_by_rank(i)
+            frame_num = decoder.frame_num_by_rank(i)
             i += 1
         except IndexError:
             print(
@@ -173,11 +173,11 @@ if __name__ == "__main__":
             break
         
         # Check if the frame has already been submitted
-        frame_num = fmd["frame_num"]
         if project.check_frame_submission(frame_num, detector_id):
             continue # Frame has already been submitted. Skipping...
             
         # Submit the frame and log the submission
+        fmd = decoder.framedat_by_num(frame_num)
         try:
             submit_to_model_retry(detector, fmd, ask_async=args.ask_async, wait=args.wait, human_review=args.human_review)
         finally:

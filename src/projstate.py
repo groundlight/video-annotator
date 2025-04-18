@@ -154,5 +154,5 @@ class ProjectState():
         args["project_dir"] = project_dir
         out = cls(**args)
         out.frame_metadata = FrameListMetadata.load(project_dir)
-        print(f"Loaded project state from {project_dir} with {len(out.frame_metadata)} frames")
+        print(f"Loaded project state from {project_dir} with {len(out.frame_metadata)} clustered frames")
         return out

@@ -29,7 +29,8 @@ class FrameManager:
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
-        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.total_frames = self.get_actual_frame_count()
         
         # Determine the number of frames to use based on the total number of frames in the provided video
         # and the maximum frames requested by the user        
@@ -37,7 +38,7 @@ class FrameManager:
             self.num_frames_to_use = self.total_frames
         else:
             self.num_frames_to_use = min(max_frames, self.total_frames)
-            print(f'Using a cluster of {self.num_frames_to_use} frame of {self.total_frames} available frames.')
+            print(f'Using a cluster of {self.num_frames_to_use} frames of {self.total_frames} total video frames.')
             
         self.qcluster = QCluster()
         if frame_metadata is None:
@@ -45,6 +46,23 @@ class FrameManager:
         else:
             self.metadata = frame_metadata
         self.frame_diversity_order = None
+        
+    def get_actual_frame_count(self) -> int:
+        """
+        Video metadata sometimes lies and the reported frame count might be a bit too high.
+        This function seeks backwards from the reported frame count until it finds the last readable frame.
+        """
+        reported_frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_num = reported_frame_count - 1
+
+        while frame_num >= 0:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+            ret, _ = self.cap.read()
+            if ret:
+                return frame_num + 1
+            frame_num -= 1
+
+        return 0  # couldn't read any frames
 
     @classmethod
     def for_project(cls, project: ProjectState):
@@ -104,6 +122,9 @@ class FrameManager:
         if frame.shape[0] * frame.shape[1] > 120000:
             frame = cv2.resize(frame, (400, 300))
         return frame
+    
+    def frame_num_by_rank(self, rank: int) -> int:
+        return self.frame_diversity_order[rank]
 
     def framedat_by_rank(self, rank: int) -> dict:
         """Gets a bunch of data about a frame, from its rank (a.k.a. diversity order).
@@ -112,7 +133,7 @@ class FrameManager:
             - frame: numpy array of the frame
             - frame_num: the frame number
         """
-        frame_num = self.frame_diversity_order[rank]
+        frame_num = self.frame_num_by_rank(rank)
         return self.framedat_by_num(frame_num)
 
     def framedat_by_num(self, frame_num: int) -> dict:
