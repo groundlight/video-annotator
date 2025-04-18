@@ -18,7 +18,7 @@ from drawing import draw_iqs
 
 from threaded_video_writer import ThreadedVideoWriter
 
-def infer_and_produce_video(project: ProjectState, detector_ids: list[str], frame_stride: int) ->  None:
+def infer_and_produce_video(project: ProjectState, detector_ids: list[str], frame_stride: int, web_preview_port: int) ->  None:
     gl = Groundlight()
     
     detectors = [gl.get_detector(detector_id) for detector_id in detector_ids]
@@ -55,11 +55,10 @@ def infer_and_produce_video(project: ProjectState, detector_ids: list[str], fram
     print(f'Input video FPS: {input_fps} | Output video FPS: {output_fps} given frame stride of {frame_stride}')
     
     # Create the video writer
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec for .mp4
-    writer = cv2.VideoWriter(filepath, fourcc, output_fps, (width, height))
-    # writer = ThreadedVideoWriter(filepath=)
+    writer = ThreadedVideoWriter(filepath, output_fps, (width, height))
     
-    web_server = FrameGrabWebServer("Video Producer")
+    message = f'Output video path: {filepath}'
+    web_server = FrameGrabWebServer(f"Producing {filename}...", port=web_preview_port, message=message)
     
     for frame_num in tqdm(range(0, total_frames, frame_stride), "Producing video"):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
@@ -71,6 +70,8 @@ def infer_and_produce_video(project: ProjectState, detector_ids: list[str], fram
         # Perform inference
         iqs = []
         for detector in detectors:
+            max_retries = 10
+            retries = 0
             while True:
                 try:
                     iq = gl.submit_image_query(
@@ -81,6 +82,11 @@ def infer_and_produce_video(project: ProjectState, detector_ids: list[str], fram
                     )
                     break
                 except Exception as e:
+                    retries += 1
+                    if retries == max_retries:
+                        raise RuntimeError(
+                            f'Repeatedly encountered an exception while submitting image queries to {detector.id}.'
+                        )
                     print(e)
                     time.sleep(1)
                     
@@ -92,20 +98,23 @@ def infer_and_produce_video(project: ProjectState, detector_ids: list[str], fram
         web_server.show_image(frame)
         
         # Write the frame
-        writer.write(frame)
+        # writer.write(frame)
+        writer.add_frame(frame)
         
     cap.release()
-    writer.release()
+    # writer.release()
+    writer.stop()
     
-    print('Done.')
+    print(f'Finished producing video at {filepath}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--detector-ids", type=str, nargs="+", required=True, help="One or more detector IDs to use")
-    parser.add_argument("--frame-stride", type=int, default=1,  help="Use every n frames of the input video. Defaults to 1 (uses all frames).")
+    parser.add_argument("--frame-stride", type=int, default=1,  help="Use every nth frame of the input video. Defaults to 1 (uses all frames).")
+    parser.add_argument("--web-preview-port", type=int, default=5000,  help="The port used by the web preview.")
     args = parser.parse_args()
     
     project = ProjectState.load(args.project_dir)
     
-    infer_and_produce_video(project, args.detector_ids, args.frame_stride)
+    infer_and_produce_video(project, args.detector_ids, args.frame_stride, args.web_preview_port)

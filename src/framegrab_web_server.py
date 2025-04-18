@@ -3,6 +3,7 @@ import threading
 import io
 import cv2
 import logging
+import numpy as np
 
 class FrameGrabWebServer:
     def __init__(self, 
@@ -10,12 +11,14 @@ class FrameGrabWebServer:
                  host:str = "0.0.0.0", 
                  port: int = 5000, 
                  refresh_interval: int = 100, 
-                 width: int = 1280):
+                 width: int = 1280,
+                 message: str = ''):
         self.name = name
         self.host = host
         self.port = port
         self.refresh_interval = refresh_interval
         self.width = width
+        self.message = message
         self.image_bytes = None
         
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -33,6 +36,7 @@ class FrameGrabWebServer:
           <link rel="icon" type="image/x-icon" href="/static/groundlight_favicon.ico">
           <body>
             <img src="/image" width="{self.width}">
+            <p>{self.message}</p>
             <script>
               setInterval(() => {{
                 document.querySelector("img").src = "/image?" + new Date().getTime();
@@ -55,6 +59,6 @@ class FrameGrabWebServer:
     def _run(self):
         self.app.run(host=self.host, port=self.port, debug=False, use_reloader=False)
 
-    def show_image(self, frame):
+    def show_image(self, frame: np.ndarray) -> None:
         _, jpeg = cv2.imencode('.jpg', frame)
         self.image_bytes = jpeg.tobytes()

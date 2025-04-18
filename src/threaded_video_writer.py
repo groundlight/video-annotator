@@ -21,7 +21,7 @@ class ThreadedVideoWriter:
         
         self.thread = Thread(target=self._run_loop, daemon=True)
 
-        self.start()
+        self._start()
 
     def add_frame(self, frame: np.ndarray) -> None:
         try:
@@ -29,7 +29,7 @@ class ThreadedVideoWriter:
         except Full:
             print("Video recorder queue full! Dropping frame.")
 
-    def start(self) -> None:
+    def _start(self) -> None:
         self.run = True
         self.thread.start()
 
@@ -37,7 +37,6 @@ class ThreadedVideoWriter:
         self.run = False
         self.thread.join()
         self.writer.release()
-        
         print('Video recording completed.')
 
     def _run_loop(self) -> None:

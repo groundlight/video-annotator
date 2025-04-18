@@ -94,7 +94,8 @@ class FrameManager:
         print(f"Scanning video and embedding frames...")
         
         # Evenly space the frames across the entire video
-        progress = tqdm(self.frame_indices_to_use(), desc="Embedded frames")
+        indices = list(self.frame_indices_to_use())
+        progress = tqdm(indices, desc="Embedded frames")
         for frame_num in progress:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = self.cap.read()
