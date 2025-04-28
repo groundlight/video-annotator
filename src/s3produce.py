@@ -18,7 +18,12 @@ from drawing import draw_iqs
 
 from threaded_video_writer import ThreadedVideoWriter
 
-def infer_and_produce_video(project: ProjectState, detector_ids: list[str], frame_stride: int, web_preview_port: int) ->  None:
+def infer_and_produce_video(project: ProjectState, 
+                            detector_ids: list[str], 
+                            frame_stride: int, 
+                            web_preview_port: int,
+                            human_review: str,
+                            ) ->  None:
     gl = Groundlight()
     
     detectors = [gl.get_detector(detector_id) for detector_id in detector_ids]
@@ -60,52 +65,53 @@ def infer_and_produce_video(project: ProjectState, detector_ids: list[str], fram
     message = f'Output video path: {filepath}'
     web_server = FrameGrabWebServer(f"Producing {filename}...", port=web_preview_port, message=message)
     
-    for frame_num in tqdm(range(0, total_frames, frame_stride), "Producing video"):
-        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
-        ret, frame = cap.read()
-        if not ret:
-            print('Cannot read frame. Exiting...')
-            break
-        
-        # Perform inference
-        iqs = []
-        for detector in detectors:
-            max_retries = 10
-            retries = 0
-            while True:
-                try:
-                    iq = gl.submit_image_query(
-                        detector=detector,
-                        image=frame,
-                        human_review="NEVER",
-                        wait=0.0,
-                    )
-                    break
-                except Exception as e:
-                    retries += 1
-                    if retries == max_retries:
-                        raise RuntimeError(
-                            f'Repeatedly encountered an exception while submitting image queries to {detector.id}.'
+    try:
+        for frame_num in tqdm(range(0, total_frames, frame_stride), "Producing video"):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+            ret, frame = cap.read()
+            if not ret:
+                print('Cannot read frame. Exiting...')
+                break
+            
+            # Perform inference
+            iqs = []
+            for detector in detectors:
+                max_retries = 10
+                retries = 0
+                while True:
+                    try:
+                        iq = gl.submit_image_query(
+                            detector=detector,
+                            image=frame,
+                            human_review=human_review,
+                            wait=0.0,
                         )
-                    print(e)
-                    time.sleep(1)
+                        break
+                    except Exception as e:
+                        retries += 1
+                        if retries == max_retries:
+                            raise RuntimeError(
+                                f'Repeatedly encountered an exception while submitting image queries to {detector.id}.'
+                            )
+                        print(e)
+                        time.sleep(1)
+                        
+                iqs.append(iq)
                     
-            iqs.append(iq)
-                
-        # Annotate the frame
-        draw_iqs(detectors, iqs, frame)
-        
-        web_server.show_image(frame)
-        
-        # Write the frame
-        # writer.write(frame)
-        writer.add_frame(frame)
-        
-    cap.release()
-    # writer.release()
-    writer.stop()
-    
-    print(f'Finished producing video at {filepath}')
+            # Annotate the frame
+            draw_iqs(detectors, iqs, frame)
+            
+            # Show in web browser
+            web_server.show_image(frame)
+            
+            # Write the frame
+            writer.add_frame(frame)
+    except KeyboardInterrupt:
+        print('User cancelled video production.')
+    finally:
+        cap.release()
+        writer.stop()
+        print(f'Finished producing video at {filepath}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -113,8 +119,15 @@ if __name__ == "__main__":
     parser.add_argument("--detector-ids", type=str, nargs="+", required=True, help="One or more detector IDs to use")
     parser.add_argument("--frame-stride", type=int, default=1,  help="Use every nth frame of the input video. Defaults to 1 (uses all frames).")
     parser.add_argument("--web-preview-port", type=int, default=5000,  help="The port used by the web preview.")
+    parser.add_argument(
+        "--human-review", 
+        type=str, 
+        default="NEVER", 
+        choices=["NEVER", "ALWAYS", "DEFAULT"], 
+        help="Specifies the cloud labeling behavior. Options are: 'NEVER' (never escalates to cloud labelers), 'ALWAYS' (always escalates), or 'DEFAULT' (only escalates ML answer is not confident)."
+        )
     args = parser.parse_args()
     
     project = ProjectState.load(args.project_dir)
     
-    infer_and_produce_video(project, args.detector_ids, args.frame_stride, args.web_preview_port)
+    infer_and_produce_video(project, args.detector_ids, args.frame_stride, args.web_preview_port, args.human_review)

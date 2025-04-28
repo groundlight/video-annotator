@@ -10,7 +10,7 @@ First, run `./src/s1setup.py` to set up the project directory, and cluster the f
 
 Then run `./src/s2train.py` to create a detector, and send the most interesting frames to the model.  During this time, you should open the dashboard and label the images as they come in.  This script will wait for confident scores.
 
-Now run `./src/s3infer.py` to run all the frames through the detector, and build a new video with the results.
+Now run `./src/s3produce.py` to run all the frames through the detector, and build a new video with the results.
 
 ## Setting up your dev environment
 

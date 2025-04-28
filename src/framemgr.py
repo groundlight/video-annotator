@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
-import argparse
-import os
-import json
 from typing import Optional
 from typing import Iterator
 
 from PIL import Image
-from imgcat import imgcat
 from tqdm.auto import tqdm
 import cv2
 import numpy as np
 
 from qcluster import QCluster
 from projstate import ProjectState, FrameListMetadata
-
 
 class FrameManager:
     """Analyzes all the frames in a video, recording metadata about them.
@@ -39,7 +34,7 @@ class FrameManager:
         else:
             self.num_frames_to_use = min(max_frames, self.total_frames)
         print(f'Using a cluster of {self.num_frames_to_use} frames of {self.total_frames} total video frames.')
-            
+        
         self.qcluster = QCluster()
         if frame_metadata is None:
             self.metadata = FrameListMetadata()
@@ -72,7 +67,9 @@ class FrameManager:
             "frame_metadata": project.frame_metadata,
         }
         out = cls(**args)
+        print('Updating diversity order...')
         out._update_frame_diversity_order()
+        print('Updated diversity order.')
         return out
     
     def frame_indices_to_use(self) -> Iterator[int]:
@@ -116,6 +113,11 @@ class FrameManager:
         def get_diversity_rank(i):  # just used by lambda below
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
         self.frame_diversity_order = sorted(self.frame_indices_to_use(), key=get_diversity_rank)
+        
+    # def _get_frame_diversity_order_from_json(self):
+    #     # TODO ready the project json file and get the frame diversity order
+    #     # self.frame_diversity_order = ?
+    #     pass
         
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""

@@ -58,16 +58,15 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
     print('-' * 50)
     print(f"Submitting frame {fmd['frame_num']} to model.")
     print(message)
-    imgcat(fmd["pil_img"])
-    print("")
-    print("")
     
     t1 = time.time()
     if ask_async:
         iq = gl.ask_async(detector, fmd["pil_img"], human_review=human_review)
         print(f'Submitted {iq.id} asynchonously to Groundlight.')
     else:
-        iq = gl.submit_image_query(detector, fmd["pil_img"], wait=0.0, human_review=human_review, metadata=iq_metadata)
+        print('Submitting iq...')
+        iq = gl.submit_image_query(detector, fmd["pil_img"], wait=0.0, human_review=human_review)
+        print(f'Finished submitting {iq.id}.')
         
         confidence = 0.0 if iq.result.confidence is None else iq.result.confidence
         confidence_threshold = detector.confidence_threshold
@@ -154,7 +153,10 @@ if __name__ == "__main__":
             print(f"Updated {detector.id}'s confidence threshold to {args.confidence}")
             
     detector_id = detector.id
+    
+    print('get_num_previously_submitted_frames starting...')
     num_previously_submitted_frames = project.get_num_previously_submitted_frames(detector_id)
+    print('get_num_previously_submitted_frames finished.')
     
     num_frames = min(args.num_frames, len(decoder))
     print(f'Previously submitted {num_previously_submitted_frames} frames to detector {detector_id}. Submitting {num_frames} frames more...')

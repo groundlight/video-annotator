@@ -37,7 +37,7 @@ class ThreadedVideoWriter:
         self.run = False
         self.thread.join()
         self.writer.release()
-        print('Video recording completed.')
+        print('Video recording stopped.')
 
     def _run_loop(self) -> None:
         while self.run or not self.queue.empty():
