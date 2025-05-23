@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
-import argparse
-import os
-import json
 from typing import Optional
+from typing import Iterator
 
 from PIL import Image
-from imgcat import imgcat
 from tqdm.auto import tqdm
 import cv2
 import numpy as np
 
 from qcluster import QCluster
 from projstate import ProjectState, FrameListMetadata
-
 
 class FrameManager:
     """Analyzes all the frames in a video, recording metadata about them.
@@ -24,21 +20,44 @@ class FrameManager:
             :video_path (str): Path to the input video file.
         """
         self.video_path = video_path
+        print(video_path)
         self.cap = cv2.VideoCapture(video_path)
         if not self.cap.isOpened():
             raise ValueError("Error opening video file")
-        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        if max_frames:
-            if max_frames < self.total_frames:
-                print(f"Limiting to {max_frames} frames.  Original frame count: {self.total_frames}")
-                self.total_frames = max_frames
-        print(f"Total frames: {self.total_frames}")
+        
+        self.total_frames = self.get_actual_frame_count()
+        
+        # Determine the number of frames to use based on the total number of frames in the provided video
+        # and the maximum frames requested by the user        
+        if max_frames == 0:
+            self.num_frames_to_use = self.total_frames
+        else:
+            self.num_frames_to_use = min(max_frames, self.total_frames)
+        print(f'Using a cluster of {self.num_frames_to_use} frames of {self.total_frames} total video frames.')
+        
         self.qcluster = QCluster()
         if frame_metadata is None:
             self.metadata = FrameListMetadata()
         else:
             self.metadata = frame_metadata
         self.frame_diversity_order = None
+        
+    def get_actual_frame_count(self) -> int:
+        """
+        Video metadata sometimes lies and the reported frame count might be a bit too high.
+        This function seeks backwards from the reported frame count until it finds the last readable frame.
+        """
+        reported_frame_count = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        frame_num = reported_frame_count - 1
+
+        while frame_num >= 0:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+            ret, _ = self.cap.read()
+            if ret:
+                return frame_num + 1
+            frame_num -= 1
+
+        return 0  # couldn't read any frames
 
     @classmethod
     def for_project(cls, project: ProjectState):
@@ -48,44 +67,62 @@ class FrameManager:
             "frame_metadata": project.frame_metadata,
         }
         out = cls(**args)
+        print('Updating diversity order...')
         out._update_frame_diversity_order()
+        print('Updated diversity order.')
         return out
+    
+    def frame_indices_to_use(self) -> Iterator[int]:
+        """
+        Based on the length of the whole video and the number of frames that we actually want to use, generate
+        the indices of the frames to use.
+        """
+        for i in range(self.num_frames_to_use):
+            idx = int(round(i * (self.total_frames - 1) / (self.num_frames_to_use - 1)))
+            yield idx
+
     def __len__(self):
-        return self.total_frames
+        return self.num_frames_to_use
 
     def analyze(self):
         """Analyzes the video frame by frame.  Calculates embeddings, 
         and clusters the frames for diversity.
         """
-        print(f"Scanning video, embedding frames")
-        progress = tqdm(range(self.total_frames), desc="Embedding frames")
+        print(f"Scanning video and embedding frames...")
+        
+        # Evenly space the frames across the entire video
+        indices = list(self.frame_indices_to_use())
+        progress = tqdm(indices, desc="Embedded frames")
         for frame_num in progress:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = self.cap.read()
             if not ret:
                 print(f"Warning: didn't get frame {frame_num}")
-                self.total_frames = frame_num
                 break
             frame = self.preprocess_frame(frame)
             self.qcluster.add_image(frame, frame_num)
-        print("Scan complete, clustering frames")
+            
+        print("Scan complete, clustering frames...")
         cluster_info = self.qcluster.analyze()
         for entry in cluster_info:
             self.metadata.update_frame_metadata(num=entry["id"], diversity_rank=entry["diversity_rank"], cluster=entry["cluster"])
         self._update_frame_diversity_order()
-        print(f"Clustering complete.  Found {len(self.qcluster)} clusters")
+        print(f"Clustering complete. Found {len(self.qcluster)} clusters")
 
     def _update_frame_diversity_order(self):
-        N = self.total_frames
         def get_diversity_rank(i):  # just used by lambda below
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
-        self.frame_diversity_order = sorted(range(N), key=get_diversity_rank)
-
+        self.frame_diversity_order = sorted(self.frame_indices_to_use(), key=get_diversity_rank)
+        
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
         # check if it has too many pixels.  For this we only need like 120k
         if frame.shape[0] * frame.shape[1] > 120000:
             frame = cv2.resize(frame, (400, 300))
         return frame
+    
+    def frame_num_by_rank(self, rank: int) -> int:
+        return self.frame_diversity_order[rank]
 
     def framedat_by_rank(self, rank: int) -> dict:
         """Gets a bunch of data about a frame, from its rank (a.k.a. diversity order).
@@ -94,7 +131,7 @@ class FrameManager:
             - frame: numpy array of the frame
             - frame_num: the frame number
         """
-        frame_num = self.frame_diversity_order[rank]
+        frame_num = self.frame_num_by_rank(rank)
         return self.framedat_by_num(frame_num)
 
     def framedat_by_num(self, frame_num: int) -> dict:
@@ -126,5 +163,4 @@ class FrameManager:
             raise ValueError(f"Error reading frame {frame_num}")
         # swap bgr to rgb
         rgb_frame = cv2.cvtColor(bgr_frame, cv2.COLOR_BGR2RGB)
-        return self.preprocess_frame(rgb_frame)
-
+        return rgb_frame

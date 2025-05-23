@@ -27,16 +27,19 @@ class FrameListMetadata():
     def get_frame_metadata(self, num: int) -> FrameMetadata:
         """Get the frame metadata for a given frame number.
         """
-        if len(self.frame_metadata) <= num:
-            self._extend_frame_metadata(num)
-        return self.frame_metadata[num]
+        
+        for fmd in self.frame_metadata:
+            if num == fmd["frame_num"]:
+                return fmd
+        else:
+            return self._extend_frame_metadata(num)
 
     def _extend_frame_metadata(self, num: int):
         """Extend the frame metadata to the given frame number.
         """
-        for i in range(len(self.frame_metadata), num + 1):
-            new_fmd = FrameMetadata(frame_num=i)
-            self.frame_metadata.append(new_fmd)
+        new_fmd = FrameMetadata(frame_num=num)
+        self.frame_metadata.append(new_fmd)
+        return new_fmd
 
     def __len__(self):
         return len(self.frame_metadata)
@@ -77,6 +80,9 @@ class ProjectState():
         self.video_path = video_path
         self.project_dir = project_dir
         self.frame_metadata = FrameListMetadata()
+        
+        # A directory that contains files that record which frames have already been submitted to each detector. This avoids duplication.
+        self.FRAME_SUBMISSION_LOGS_PATH = "frame_submission_logs"
 
     def subdir(self, name: str) -> str:
         """Get the path to a subdirectory of the project directory.
@@ -103,6 +109,41 @@ class ProjectState():
             json.dump(out, f, indent=2)
         print(f"Saved project state to {fn}")
         print(f"Project dir: {self.project_dir}")
+        
+    def check_frame_submission(self, frame_num: str, detector_id: str) -> bool:
+        """
+        Check if the given frame has been submitted to Groundlight.
+        """
+        log_path = os.path.join(self.project_dir, self.FRAME_SUBMISSION_LOGS_PATH, f"{detector_id}.txt")
+        if not os.path.exists(log_path):
+            return False
+
+        with open(log_path, "r") as f:
+            submitted_frames = {int(line.strip()) for line in f}
+        return frame_num in submitted_frames
+    
+    def log_frame_submission(self, frame_num: int, detector_id: str) -> None:
+        """
+        Log that we have submitted a frame to Groundlight to avoid sending duplicates.
+        """
+        log_dir = os.path.join(self.project_dir, self.FRAME_SUBMISSION_LOGS_PATH)
+        os.makedirs(log_dir, exist_ok=True)
+
+        log_path = os.path.join(log_dir, f"{detector_id}.txt")
+        with open(log_path, "a") as f:
+            f.write(f"{frame_num}\n")
+            
+    def get_num_previously_submitted_frames(self, detector_id: str) -> int:
+        """
+        Return the number of frames that have been submitted to Groundlight
+        for this detector.
+        """
+        log_path = os.path.join(self.project_dir, self.FRAME_SUBMISSION_LOGS_PATH, f"{detector_id}.txt")
+        if not os.path.exists(log_path):
+            return 0
+
+        with open(log_path, "r") as f:
+            return sum(1 for _ in f)
 
     @classmethod
     def load(cls, project_dir: str) -> "ProjectState":
@@ -114,5 +155,5 @@ class ProjectState():
         args["project_dir"] = project_dir
         out = cls(**args)
         out.frame_metadata = FrameListMetadata.load(project_dir)
-        print(f"Loaded project state from {project_dir} with {len(out.frame_metadata)} frames")
+        print(f"Loaded project state from {project_dir} with {len(out.frame_metadata)} clustered frames")
         return out
