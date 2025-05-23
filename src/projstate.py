@@ -81,6 +81,7 @@ class ProjectState():
         self.project_dir = project_dir
         self.frame_metadata = FrameListMetadata()
         
+        # A directory that contains files that record which frames have already been submitted to each detector. This avoids duplication.
         self.FRAME_SUBMISSION_LOGS_PATH = "frame_submission_logs"
 
     def subdir(self, name: str) -> str:

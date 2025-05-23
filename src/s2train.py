@@ -10,6 +10,9 @@ from groundlight import Groundlight, ImageQuery, CountingResult, BinaryClassific
 from imgcat import imgcat
 
 def pprint_iq(iq: ImageQuery) -> None:
+    """
+    Pretty-print print the details of an image query.
+    """
     print(f'"{iq.query}"')
     print(f'ID: {iq.id}')
 
@@ -105,7 +108,6 @@ def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, hum
         except Exception as e:
             if attempt == max_attempts - 1:
                 raise e
-            # import pdb; pdb.set_trace()
             print(f"Error submitting frame {fmd['frame_num']}: {e}.  Pausing for {delay} seconds.")
             time.sleep(delay)
             delay *= 2

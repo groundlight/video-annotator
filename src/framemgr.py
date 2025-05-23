@@ -114,11 +114,6 @@ class FrameManager:
             return self.metadata.get_frame_metadata(i)["diversity_rank"]
         self.frame_diversity_order = sorted(self.frame_indices_to_use(), key=get_diversity_rank)
         
-    # def _get_frame_diversity_order_from_json(self):
-    #     # TODO ready the project json file and get the frame diversity order
-    #     # self.frame_diversity_order = ?
-    #     pass
-        
     def preprocess_frame(self, frame: np.ndarray) -> np.ndarray:
         """Preprocess the frame to make motion detection faster."""
         # check if it has too many pixels.  For this we only need like 120k
