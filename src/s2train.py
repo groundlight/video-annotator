@@ -31,7 +31,7 @@ def pprint_iq(iq: ImageQuery) -> None:
     confidence_str = '-' if confidence is None else f'{confidence * 100:.2f}%'
     print(f'Confidence: {confidence_str}')
     
-    source = '-' if iq.result is None else iq.result.source.value
+    source = '-' if iq.result is None else iq.result.source
     print(f'Source: {source}')
 
 def build_detector(query: str, confidence: float):
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--human-review", 
         type=str, 
-        default="NEVER", 
+        default="DEFAULT", 
         choices=["NEVER", "ALWAYS", "DEFAULT"], 
         help="Specifies the cloud labeling behavior. Options are: 'NEVER' (never escalates to cloud labelers), 'ALWAYS' (always escalates), or 'DEFAULT' (only escalates ML answer is not confident)."
         )
