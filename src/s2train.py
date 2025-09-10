@@ -1,6 +1,6 @@
 #!/usr/bin/env -S poetry run python
 """Submits frames to a Groundlight detector for training.
-Waits for confident answers, which generally means human review.
+By default, waits for confident answers, which generally means human review.
 All is done in diversity order, so the frames are spread out.
 """
 import argparse
@@ -33,6 +33,7 @@ def pprint_iq(iq: ImageQuery) -> None:
     
     source = '-' if iq.result is None else iq.result.source
     print(f'Source: {source}')
+
 
 def build_detector(query: str, confidence: float):
     name = query[:20]  # would be nice if I didn't have to name the detector
@@ -96,6 +97,7 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
     
     print(f'Result returned in {elapsed_time:.2f} seconds.')
 
+
 def submit_to_model_retry(detector, fmd: dict, ask_async: bool, wait: float, human_review: str) -> None:
     """Takes the frame-metadata dict and submits the frame to the model.
     """
@@ -118,11 +120,11 @@ if __name__ == "__main__":
     parser.add_argument("project_dir", type=str, help="Path to the project directory")
     
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--query", type=str, help="Query to define the model. Either provide this or detector-id.")
-    group.add_argument("--detector-id", type=str, help="ID of an existing detector. Either provide this or query.")
+    group.add_argument("--query", type=str, help="Query to define the model for a new binary detector. Either provide this or detector-id")
+    group.add_argument("--detector-id", type=str, help="ID of an existing detector. Either provide this or query")
     
     parser.add_argument("--confidence", type=float, default=0.75, help="Confidence threshold for the model")
-    parser.add_argument("--wait", type=float, default=120.0, help="The amount of time to wait for a confident answer.")
+    parser.add_argument("--wait", type=float, default=120.0, help="The amount of time to wait for a confident answer")
     parser.add_argument("--num-frames", type=int, default=100, help="Number of frames to submit to the model")
     parser.add_argument("--ask-async", action="store_true", help="Don't wait for any responses to the image queries")
     parser.add_argument(
@@ -130,7 +132,7 @@ if __name__ == "__main__":
         type=str, 
         default="DEFAULT", 
         choices=["NEVER", "ALWAYS", "DEFAULT"], 
-        help="Specifies the cloud labeling behavior. Options are: 'NEVER' (never escalates to cloud labelers), 'ALWAYS' (always escalates), or 'DEFAULT' (only escalates ML answer is not confident)."
+        help="Specifies the cloud labeling behavior. Options are: 'NEVER' (never escalates to cloud labelers), 'ALWAYS' (always escalates), or 'DEFAULT' (only escalates ML answer is not confident)"
         )
 
     args = parser.parse_args()
