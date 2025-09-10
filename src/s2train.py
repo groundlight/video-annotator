@@ -7,7 +7,7 @@ import argparse
 import time
 
 from groundlight import Groundlight, ImageQuery, CountingResult, BinaryClassificationResult
-from imgcat import imgcat
+
 
 def pprint_iq(iq: ImageQuery) -> None:
     """
@@ -64,11 +64,11 @@ def submit_to_model(detector, fmd: dict, ask_async: bool, wait: float, human_rev
     
     t1 = time.time()
     if ask_async:
-        iq = gl.ask_async(detector, fmd["pil_img"], human_review=human_review)
+        iq = gl.ask_async(detector, fmd["pil_img"], human_review=human_review, metadata=iq_metadata)
         print(f'Submitted {iq.id} asynchonously to Groundlight.')
     else:
         print('Submitting iq...')
-        iq = gl.submit_image_query(detector, fmd["pil_img"], wait=0.0, human_review=human_review)
+        iq = gl.submit_image_query(detector, fmd["pil_img"], wait=0.0, human_review=human_review, metadata=iq_metadata)
         print(f'Finished submitting {iq.id}.')
         
         confidence = 0.0 if iq.result.confidence is None else iq.result.confidence
