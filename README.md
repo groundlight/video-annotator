@@ -6,11 +6,12 @@ The Video Annotator allows you to efficiently extract images from videos and sen
 
 After you set up your environment (see below), you can run the following commands to build a CV model and annotate a video.  Everything is stored in your project directory, so you can pick up where you left off.
 
-First, run `./src/s1setup.py` to set up the project directory, and cluster the frames to find diverse representative frames.
+First, run `./src/s1setup.py <VIDEO_PATH>` to set up the project directory, and cluster the frames to find diverse representative frames.
 
-Then run `./src/s2train.py` to create a detector, and send the most interesting frames to the model.  During this time, you should open the dashboard and label the images as they come in.  This script will wait for confident scores.
+Then run `./src/s2train.py <PROJECT_DIRECTORY>` to create a detector, and send the most interesting frames to the model. During this time, you should open the dashboard and label the images as they come in.  This script will wait for confident answers. 
+If you want to use an existing detector, or use a different human labeling configuration, there are feature flags available to control the behavior of the script. 
 
-Now run `./src/s3produce.py` to run all the frames through the detector, and build a new video with the results.
+Now run `./src/s3produce.py <PROJECT_DIRECTORY>` to run all the frames through the detector, and build a new video with the results.
 
 ## Setting up your dev environment
 
