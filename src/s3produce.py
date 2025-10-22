@@ -6,6 +6,11 @@ import argparse
 import time
 import os
 import cv2
+import sys
+import warnings
+import logging
+from io import StringIO
+from contextlib import contextmanager
 
 from groundlight import Groundlight
 from tqdm.auto import tqdm
@@ -17,6 +22,28 @@ from framegrab_web_server import FrameGrabWebServer
 from drawing import draw_iqs
 
 from threaded_video_writer import ThreadedVideoWriter
+
+@contextmanager
+def suppress_output():
+    """Context manager to suppress stdout, stderr, warnings, and logging temporarily."""
+    old_stdout = sys.stdout
+    old_stderr = sys.stderr
+    sys.stdout = StringIO()
+    sys.stderr = StringIO()
+    
+    # Temporarily increase logging level to suppress Groundlight SDK logs
+    old_log_level = logging.root.level
+    logging.root.setLevel(logging.CRITICAL + 1)
+    
+    # Also suppress warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
+            logging.root.setLevel(old_log_level)
 
 def infer_and_produce_video(project: ProjectState, 
                             detector_ids: list[str], 
@@ -66,11 +93,12 @@ def infer_and_produce_video(project: ProjectState,
     web_server = FrameGrabWebServer(f"Producing {filename}...", port=web_preview_port, message=message)
     
     try:
-        for frame_num in tqdm(range(0, total_frames, frame_stride), "Producing video"):
+        pbar = tqdm(range(0, total_frames, frame_stride), desc="Producing video")
+        for frame_num in pbar:
             cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
             ret, frame = cap.read()
             if not ret:
-                print('Cannot read frame. Exiting...')
+                tqdm.write('Cannot read frame. Exiting...')
                 break
             
             # Perform inference
@@ -80,12 +108,14 @@ def infer_and_produce_video(project: ProjectState,
                 retries = 0
                 while True:
                     try:
-                        iq = gl.submit_image_query(
-                            detector=detector,
-                            image=frame,
-                            human_review=human_review,
-                            wait=0.0,
-                        )
+                        # Suppress Groundlight SDK warnings to avoid breaking progress bar
+                        with suppress_output():
+                            iq = gl.submit_image_query(
+                                detector=detector,
+                                image=frame,
+                                human_review=human_review,
+                                wait=0.0,
+                            )
                         break
                     except Exception as e:
                         retries += 1
@@ -93,13 +123,14 @@ def infer_and_produce_video(project: ProjectState,
                             raise RuntimeError(
                                 f'Repeatedly encountered an exception while submitting image queries to {detector.id}.'
                             )
-                        print(e)
+                        tqdm.write(str(e))
                         time.sleep(1)
                         
                 iqs.append(iq)
                     
-            # Annotate the frame
-            draw_iqs(detectors, iqs, frame)
+            # Annotate the frame (suppress warnings here too in case they come from result parsing)
+            with suppress_output():
+                draw_iqs(detectors, iqs, frame)
             
             # Show in web browser
             web_server.show_image(frame)
@@ -107,13 +138,17 @@ def infer_and_produce_video(project: ProjectState,
             # Write the frame
             writer.add_frame(frame)
     except KeyboardInterrupt:
-        print('User cancelled video production.')
+        tqdm.write('User cancelled video production.')
     finally:
         cap.release()
         writer.stop()
         print(f'Finished producing video at {filepath}')
 
 if __name__ == "__main__":
+    # Suppress Groundlight SDK warnings globally
+    logging.getLogger('groundlight').setLevel(logging.ERROR)
+    warnings.filterwarnings('ignore')
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("project_dir", type=str, help="Path to the project directory")
     parser.add_argument("--detector-ids", type=str, nargs="+", required=True, help="One or more detector IDs to use")
