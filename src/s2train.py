@@ -1,4 +1,4 @@
-#!/usr/bin/env -S poetry run python
+#!/usr/bin/env python3
 """Submits frames to a Groundlight detector for training.
 By default, waits for confident answers, which generally means human review.
 All is done in diversity order, so the frames are spread out.
