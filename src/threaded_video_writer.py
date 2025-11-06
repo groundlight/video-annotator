@@ -11,12 +11,38 @@ class ThreadedVideoWriter:
         self.fps = fps
 
         self.queue = Queue(maxsize=10)
-        self.writer = cv2.VideoWriter(
-            filename=self.filepath,
-            fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
-            fps=fps,
-            frameSize=resolution,
-        )
+        # Use H.264 codec for browser compatibility
+        # Try 'H264' first, fallback to 'avc1' if needed, then 'mp4v' as last resort
+        fourcc_options = ['H264', 'avc1', 'mp4v']
+        self.writer = None
+        for fourcc_str in fourcc_options:
+            try:
+                fourcc = cv2.VideoWriter_fourcc(*fourcc_str)
+                test_writer = cv2.VideoWriter(
+                    filename=self.filepath,
+                    fourcc=fourcc,
+                    fps=fps,
+                    frameSize=resolution,
+                )
+                if test_writer.isOpened():
+                    self.writer = test_writer
+                    if fourcc_str != 'mp4v':
+                        print(f"Using {fourcc_str} codec for browser-compatible video")
+                    break
+                else:
+                    test_writer.release()
+            except Exception:
+                continue
+        
+        # Fallback to mp4v if H.264 not available (will be re-encoded during optimization)
+        if self.writer is None:
+            self.writer = cv2.VideoWriter(
+                filename=self.filepath,
+                fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
+                fps=fps,
+                frameSize=resolution,
+            )
+            print("Note: Using mp4v codec (will be re-encoded to H.264 during optimization)")
         self.run = False
         
         self.thread = Thread(target=self._run_loop, daemon=True)
