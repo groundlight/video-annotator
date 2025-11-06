@@ -14,142 +14,224 @@
         </header>
 
         <main>
-            <!-- Project Selection Section -->
-            <section id="project-selection-section" class="card">
-                <h2>Select or Create Project</h2>
-                <div class="form-group">
-                    <label for="project-select">Existing Projects</label>
-                    <select id="project-select" class="form-select">
-                        <option value="">-- Select a project or create new --</option>
-                    </select>
-                    <button type="button" id="load-project-btn" class="btn-secondary" style="display: none;">Load Project</button>
+            <!-- Stage 1: Choose Video and Train Detector -->
+            <section id="stage-1" class="stage-container">
+                <div class="stage-header">
+                    <h2>Stage 1: Choose Video and Train Detector</h2>
+                    <p class="stage-description">Upload a video, set up your project, and train a detector</p>
+                    <button type="button" id="go-to-stage-2-btn" class="btn-secondary stage-nav-btn">Go to Stage 2 →</button>
                 </div>
-                <div class="form-group">
-                    <button type="button" id="create-new-project-btn" class="btn-secondary">+ Create New Project</button>
-                </div>
-            </section>
 
-            <!-- Upload Section (for new projects) -->
-            <section id="upload-section" class="card" style="display: none;">
-                <h2>1. Upload Video</h2>
-                <div class="upload-area" id="upload-area">
-                    <input type="file" id="video-file" accept="video/*" style="display: none;">
-                    <div class="upload-content" id="upload-content">
-                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <p>Click to upload or drag and drop</p>
-                        <p class="file-info">MP4, AVI, MOV, MKV, WebM (max 5GB)</p>
-                    </div>
-                    <div id="upload-progress" class="upload-progress" style="display: none;">
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-small" id="upload-progress-fill"></div>
-                            <div class="progress-text-small" id="upload-progress-text">0%</div>
+                <!-- Upload Section (primary - shown first) -->
+                <div id="upload-section" class="card">
+                    <h3>Upload Video</h3>
+                    <div class="upload-area" id="upload-area">
+                        <input type="file" id="video-file" accept="video/*" style="display: none;">
+                        <div class="upload-content" id="upload-content">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p>Click to upload or drag and drop</p>
+                            <p class="file-info">MP4, AVI, MOV, MKV, WebM (max 5GB)</p>
                         </div>
-                        <p class="upload-status">Uploading...</p>
-                    </div>
-                </div>
-                <div id="upload-success" class="upload-success" style="display: none;">
-                    <div class="upload-success-info">
-                        <div>
-                            <div class="upload-success-title">✓ File uploaded successfully</div>
-                            <div class="upload-success-filename" id="uploaded-filename"></div>
+                        <div id="upload-progress" class="upload-progress" style="display: none;">
+                            <div class="progress-bar-small">
+                                <div class="progress-fill-small" id="upload-progress-fill"></div>
+                                <div class="progress-text-small" id="upload-progress-text">0%</div>
+                            </div>
+                            <p class="upload-status">Uploading...</p>
                         </div>
-                        <button type="button" id="remove-file-btn" class="remove-file-btn">Remove</button>
+                    </div>
+                    <div id="upload-success" class="upload-success" style="display: none;">
+                        <div class="upload-success-info">
+                            <div>
+                                <div class="upload-success-title">✓ File uploaded successfully</div>
+                                <div class="upload-success-filename" id="uploaded-filename"></div>
+                            </div>
+                            <button type="button" id="remove-file-btn" class="remove-file-btn">Remove</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="#" id="toggle-project-selection" style="color: #60a5fa; text-decoration: underline; cursor: pointer;">Or load an existing project</a>
                     </div>
                 </div>
-            </section>
 
-            <!-- Setup Section -->
-            <section id="setup-section" class="card" style="display: none;">
-                <h2>2. Setup Project</h2>
-                <div class="form-group">
-                    <label for="max-frames">Frames to Analyze</label>
-                    <input type="number" id="max-frames" value="500" min="0" step="1">
-                    <small>Maximum frames to analyze (0 = all frames). Recommended: 500-5000 for good balance between diversity and speed.</small>
+                <!-- Project Selection Section (secondary) -->
+                <div id="project-selection-section" class="card" style="display: none;">
+                    <h3>Load Existing Project</h3>
+                    <div class="form-group">
+                        <label for="project-select">Existing Projects</label>
+                        <select id="project-select" class="form-select">
+                            <option value="">-- Select a project --</option>
+                        </select>
+                        <button type="button" id="load-project-btn" class="btn-secondary" style="display: none;">Load Project</button>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="#" id="toggle-upload-section" style="color: #60a5fa; text-decoration: underline; cursor: pointer;">Or upload a new video</a>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="save-frames">Save Sample Frames</label>
-                    <input type="number" id="save-frames" value="10" min="0" step="1">
-                    <small>Number of diverse sample frames to save (default: 10)</small>
-                </div>
-                <button id="start-setup-btn" class="btn-primary">Start Setup</button>
-            </section>
 
-            <!-- Training Section -->
-            <section id="training-section" class="card" style="display: none;">
-                <h2>3. Train Detector</h2>
-                <div class="form-group">
-                    <label>Detector Configuration</label>
-                    <div class="form-row">
+                <!-- Setup Section -->
+                <div id="setup-section" class="card" style="display: none;">
+                    <h3>Setup Project</h3>
+                    <div class="form-group">
+                        <label for="max-frames">Frames to Analyze</label>
+                        <input type="number" id="max-frames" value="500" min="0" step="1">
+                        <small>Maximum frames to analyze (0 = all frames). Recommended: 500-5000 for good balance between diversity and speed.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="save-frames">Save Sample Frames</label>
+                        <input type="number" id="save-frames" value="10" min="0" step="1">
+                        <small>Number of diverse sample frames to save (default: 10)</small>
+                    </div>
+                    <button id="start-setup-btn" class="btn-primary">Start Setup</button>
+                </div>
+
+                <!-- Training Section -->
+                <div id="training-section" class="card" style="display: none;">
+                    <h3>Train Detector</h3>
+                    <div id="training-disabled-message" class="disabled-message" style="display: none;">
+                        <p>Please complete project setup first before training a detector.</p>
+                    </div>
+                    <div id="training-content">
                         <div class="form-group">
-                            <label for="detector-query">Query (for new detector)</label>
-                            <input type="text" id="detector-query" placeholder="e.g., Is there an anesthesiologist?">
-                            <small>Leave empty if using existing detector</small>
+                            <label>Detector Configuration</label>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="detector-query">Query (for new detector)</label>
+                                    <input type="text" id="detector-query" placeholder="e.g., Is there an anesthesiologist?">
+                                    <small>Leave empty if using existing detector</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="detector-id">Detector ID (existing)</label>
+                                    <input type="text" id="detector-id" placeholder="det_abc123">
+                                    <small>Leave empty if creating new detector</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label for="detector-id">Detector ID (existing)</label>
-                            <input type="text" id="detector-id" placeholder="det_abc123">
-                            <small>Leave empty if creating new detector</small>
+                            <label for="confidence">Confidence Threshold</label>
+                            <input type="number" id="confidence" value="0.75" min="0" max="1" step="0.01">
+                            <small>Confidence threshold for detector (default: 0.75)</small>
                         </div>
+                        <div class="form-group">
+                            <label for="num-frames">Number of Frames to Submit</label>
+                            <input type="number" id="num-frames" value="100" min="1" step="1">
+                            <small>Number of diverse frames to submit for training (default: 100)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="wait">Wait Time (seconds)</label>
+                            <input type="number" id="wait" value="120" min="0" step="1">
+                            <small>Time to wait for confident answers (default: 120s)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="human-review">Human Review Mode</label>
+                            <select id="human-review" class="form-select">
+                                <option value="DEFAULT">DEFAULT - Escalate if ML not confident</option>
+                                <option value="ALWAYS">ALWAYS - Always escalate to cloud labelers</option>
+                                <option value="NEVER">NEVER - Never escalate, manual review only</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="ask-async">
+                                Submit asynchronously (don't wait for responses)
+                            </label>
+                        </div>
+                        <button id="start-training-btn" class="btn-primary">Start Training</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="confidence">Confidence Threshold</label>
-                    <input type="number" id="confidence" value="0.75" min="0" max="1" step="0.01">
-                    <small>Confidence threshold for detector (default: 0.75)</small>
+
+                <!-- Ready for Stage 2 Message -->
+                <div id="ready-for-stage-2" class="card success-message" style="display: none;">
+                    <h3>✓ Training Complete!</h3>
+                    <p>You're ready to produce annotated videos. You can proceed to Stage 2 or continue working in Stage 1.</p>
+                    <div class="button-group">
+                        <button id="proceed-to-stage-2-btn" class="btn-primary">Proceed to Stage 2: Produce Annotated Video</button>
+                        <button id="stay-in-stage-1-btn" class="btn-secondary">Stay in Stage 1</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="num-frames">Number of Frames to Submit</label>
-                    <input type="number" id="num-frames" value="100" min="1" step="1">
-                    <small>Number of diverse frames to submit for training (default: 100)</small>
+
+                <!-- Start New Project Button -->
+                <div class="card" style="margin-top: 20px;">
+                    <button id="new-project-stage1" class="btn-secondary">Start New Project</button>
                 </div>
-                <div class="form-group">
-                    <label for="wait">Wait Time (seconds)</label>
-                    <input type="number" id="wait" value="120" min="0" step="1">
-                    <small>Time to wait for confident answers (default: 120s)</small>
-                </div>
-                <div class="form-group">
-                    <label for="human-review">Human Review Mode</label>
-                    <select id="human-review" class="form-select">
-                        <option value="DEFAULT">DEFAULT - Escalate if ML not confident</option>
-                        <option value="ALWAYS">ALWAYS - Always escalate to cloud labelers</option>
-                        <option value="NEVER">NEVER - Never escalate, manual review only</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="ask-async">
-                        Submit asynchronously (don't wait for responses)
-                    </label>
-                </div>
-                <button id="start-training-btn" class="btn-primary">Start Training</button>
             </section>
 
-            <!-- Production Section -->
-            <section id="production-section" class="card" style="display: none;">
-                <h2>4. Produce Annotated Video</h2>
-                <div class="form-group">
-                    <label for="detector-ids">Detector IDs</label>
-                    <input type="text" id="detector-ids" placeholder="det_abc123 det_xyz789" required>
-                    <small>Space-separated list of detector IDs to use for annotation</small>
+            <!-- Stage 2: Produce Annotated Video -->
+            <section id="stage-2" class="stage-container" style="display: none;">
+                <div class="stage-header">
+                    <h2>Stage 2: Produce Annotated Video</h2>
+                    <p class="stage-description">Generate annotated videos using your trained detectors</p>
+                    <button type="button" id="go-to-stage-1-btn" class="btn-secondary stage-nav-btn">← Go to Stage 1</button>
                 </div>
-                <div class="form-group">
-                    <label for="frame-stride">Frame Stride</label>
-                    <input type="number" id="frame-stride" value="1" min="1" step="1">
-                    <small>Process every Nth frame. Controls label update frequency, not video FPS. Video FPS matches input. (default: 1 = every frame)</small>
+
+                <!-- Production Section -->
+                <div id="production-section" class="card">
+                    <h3>Produce Annotated Video</h3>
+                    <div class="form-group">
+                        <label for="production-project-select">Project</label>
+                        <select id="production-project-select" class="form-select">
+                            <option value="">-- Select a project --</option>
+                        </select>
+                        <small>Select the project containing the video you want to annotate</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="detector-ids">Detector IDs</label>
+                        <input type="text" id="detector-ids" placeholder="det_abc123 det_xyz789" required>
+                        <small>Space-separated list of detector IDs to use for annotation</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="frame-stride">Frame Stride</label>
+                        <input type="number" id="frame-stride" value="1" min="1" step="1">
+                        <small>Process every Nth frame. Controls label update frequency, not video FPS. Video FPS matches input. (default: 1 = every frame)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="human-review-prod">Human Review Mode</label>
+                        <select id="human-review-prod" class="form-select">
+                            <option value="NEVER">NEVER - Never escalate to cloud labelers</option>
+                            <option value="DEFAULT">DEFAULT - Escalate if ML not confident</option>
+                            <option value="ALWAYS">ALWAYS - Always escalate to cloud labelers</option>
+                        </select>
+                    </div>
+                    <button id="start-production-btn" class="btn-primary">Start Production</button>
                 </div>
-                <div class="form-group">
-                    <label for="human-review-prod">Human Review Mode</label>
-                    <select id="human-review-prod" class="form-select">
-                        <option value="NEVER">NEVER - Never escalate to cloud labelers</option>
-                        <option value="DEFAULT">DEFAULT - Escalate if ML not confident</option>
-                        <option value="ALWAYS">ALWAYS - Always escalate to cloud labelers</option>
-                    </select>
+
+                <!-- Results Section (only shown in Stage 2) -->
+                <div id="results-section" class="card" style="display: none;">
+                    <h2>Results</h2>
+                    <div class="results-content">
+                        <div class="success-message">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <p id="results-message">Processing complete!</p>
+                        </div>
+                        <div class="download-links">
+                            <h3>Download & Preview</h3>
+                            <div class="link-group">
+                                <a id="download-video" href="#" class="download-btn" download style="display: none;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                    Download Annotated Video
+                                </a>
+                                <a id="preview-video" href="#" class="download-btn preview-btn" style="display: none;" target="_blank">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                    Preview Annotated Video
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="produce-another-btn" class="btn-primary">Produce Another Video</button>
                 </div>
-                <button id="start-production-btn" class="btn-primary">Start Production</button>
             </section>
 
             <!-- Progress Section -->
@@ -167,40 +249,6 @@
                         </div>
                     </div>
                 </div>
-            </section>
-
-            <!-- Results Section -->
-            <section id="results-section" class="card" style="display: none;">
-                <h2>Results</h2>
-                <div class="results-content">
-                    <div class="success-message">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg>
-                        <p id="results-message">Processing complete!</p>
-                    </div>
-                    <div class="download-links">
-                        <h3>Download & Preview</h3>
-                        <div class="link-group">
-                            <a id="download-video" href="#" class="download-btn" download style="display: none;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7 10 12 15 17 10"></polyline>
-                                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                                </svg>
-                                Download Annotated Video
-                            </a>
-                            <a id="preview-video" href="#" class="download-btn preview-btn" style="display: none;" target="_blank">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                </svg>
-                                Preview Annotated Video
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <button id="new-job" class="btn-primary">Start New Project</button>
             </section>
 
             <!-- Error Section -->

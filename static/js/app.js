@@ -3,9 +3,14 @@ let currentJobId = null;
 let currentProjectDir = null;
 let progressInterval = null;
 let uploadedFileJobId = null;
+let currentStage = 1; // 1 or 2
+let trainedDetectorId = null; // Store detector ID from Stage 1
 
 // DOM elements
+const stage1 = document.getElementById('stage-1');
+const stage2 = document.getElementById('stage-2');
 const projectSelect = document.getElementById('project-select');
+const projectSelectionSection = document.getElementById('project-selection-section');
 const loadProjectBtn = document.getElementById('load-project-btn');
 const createNewProjectBtn = document.getElementById('create-new-project-btn');
 const uploadSection = document.getElementById('upload-section');
@@ -16,25 +21,125 @@ const uploadedFilename = document.getElementById('uploaded-filename');
 const removeFileBtn = document.getElementById('remove-file-btn');
 const setupSection = document.getElementById('setup-section');
 const trainingSection = document.getElementById('training-section');
+const trainingDisabledMessage = document.getElementById('training-disabled-message');
+const trainingContent = document.getElementById('training-content');
+const readyForStage2 = document.getElementById('ready-for-stage-2');
+const proceedToStage2Btn = document.getElementById('proceed-to-stage-2-btn');
+const stayInStage1Btn = document.getElementById('stay-in-stage-1-btn');
+const goToStage2Btn = document.getElementById('go-to-stage-2-btn');
+const goToStage1Btn = document.getElementById('go-to-stage-1-btn');
 const productionSection = document.getElementById('production-section');
+const productionProjectSelect = document.getElementById('production-project-select');
 const progressSection = document.getElementById('progress-section');
 const resultsSection = document.getElementById('results-section');
 const errorMessage = document.getElementById('error-message');
 const errorText = document.getElementById('error-text');
+const newProjectStage1Btn = document.getElementById('new-project-stage1');
+const produceAnotherBtn = document.getElementById('produce-another-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadProjects();
+    showStage1();
+    // Show upload section by default, hide project selection
+    uploadSection.style.display = 'block';
+    projectSelectionSection.style.display = 'none';
 });
 
-// Project selection
-createNewProjectBtn.addEventListener('click', () => {
-    uploadSection.style.display = 'block';
-    setupSection.style.display = 'none';
-    trainingSection.style.display = 'none';
-    productionSection.style.display = 'none';
+// Stage Management Functions
+function showStage1() {
+    currentStage = 1;
+    stage1.style.display = 'block';
+    stage2.style.display = 'none';
+    progressSection.style.display = 'none';
+    resultsSection.style.display = 'none'; // Hide results in Stage 1
     hideError();
-});
+}
+
+function showStage2() {
+    currentStage = 2;
+    stage1.style.display = 'none';
+    stage2.style.display = 'block';
+    // Results section is now inside Stage 2, so it will show/hide with Stage 2
+    // Progress section can show during processing
+    hideError();
+    updateProductionDefaults();
+}
+
+function enableTraining() {
+    trainingSection.style.display = 'block';
+    trainingDisabledMessage.style.display = 'none';
+    trainingContent.style.display = 'block';
+    trainingSection.classList.remove('training-section-disabled');
+}
+
+function disableTraining() {
+    trainingSection.style.display = 'block';
+    trainingDisabledMessage.style.display = 'block';
+    trainingContent.style.display = 'none';
+    trainingSection.classList.add('training-section-disabled');
+}
+
+function checkProjectReady(project) {
+    return project && project.frame_count > 0;
+}
+
+function updateProductionDefaults() {
+    // Populate production project selector
+    const projects = JSON.parse(projectSelect.dataset.projects || '[]');
+    productionProjectSelect.innerHTML = '<option value="">-- Select a project --</option>';
+    
+    projects.forEach(project => {
+        const option = document.createElement('option');
+        option.value = project.project_dir;
+        option.textContent = `${project.name} (${project.frame_count} frames)`;
+        if (project.project_dir === currentProjectDir) {
+            option.selected = true;
+        }
+        productionProjectSelect.appendChild(option);
+    });
+    
+    // Pre-fill detector ID if available from Stage 1 (but don't require it)
+    if (trainedDetectorId) {
+        document.getElementById('detector-ids').value = trainedDetectorId;
+    } else {
+        // Clear detector IDs if no trained detector from Stage 1
+        document.getElementById('detector-ids').value = '';
+    }
+}
+
+// Project selection
+if (createNewProjectBtn) {
+    createNewProjectBtn.addEventListener('click', () => {
+        showStage1();
+        uploadSection.style.display = 'block';
+        projectSelectionSection.style.display = 'none';
+        setupSection.style.display = 'none';
+        disableTraining();
+        readyForStage2.style.display = 'none';
+        hideError();
+    });
+}
+
+// Toggle between upload and project selection
+const toggleProjectSelection = document.getElementById('toggle-project-selection');
+const toggleUploadSection = document.getElementById('toggle-upload-section');
+
+if (toggleProjectSelection) {
+    toggleProjectSelection.addEventListener('click', (e) => {
+        e.preventDefault();
+        uploadSection.style.display = 'none';
+        projectSelectionSection.style.display = 'block';
+    });
+}
+
+if (toggleUploadSection) {
+    toggleUploadSection.addEventListener('click', (e) => {
+        e.preventDefault();
+        uploadSection.style.display = 'block';
+        projectSelectionSection.style.display = 'none';
+    });
+}
 
 loadProjectBtn.addEventListener('click', () => {
     const selectedProject = projectSelect.value;
@@ -52,14 +157,35 @@ loadProjectBtn.addEventListener('click', () => {
         uploadSection.style.display = 'none';
         setupSection.style.display = 'none';
         
-        // Show training and production sections if project is set up
-        if (project.frame_count > 0) {
-            trainingSection.style.display = 'block';
-            productionSection.style.display = 'block';
+        // Enable training if project is set up
+        if (checkProjectReady(project)) {
+            enableTraining();
         } else {
-            showError('Project has not been set up yet. Please run setup first.');
+            disableTraining();
+            showError('Project has not been set up yet. Please create a new project and run setup first.');
         }
+        readyForStage2.style.display = 'none';
     }
+});
+
+// Proceed to Stage 2
+proceedToStage2Btn.addEventListener('click', () => {
+    showStage2();
+});
+
+// Stay in Stage 1 (hide the completion message)
+stayInStage1Btn.addEventListener('click', () => {
+    readyForStage2.style.display = 'none';
+    enableTraining(); // Re-enable training section so they can train another detector
+});
+
+// Manual navigation between stages
+goToStage2Btn.addEventListener('click', () => {
+    showStage2();
+});
+
+goToStage1Btn.addEventListener('click', () => {
+    showStage1();
 });
 
 // File upload
@@ -95,6 +221,7 @@ removeFileBtn.addEventListener('click', () => {
     uploadSuccess.style.display = 'none';
     videoFileInput.value = '';
     setupSection.style.display = 'none';
+    disableTraining();
 });
 
 async function handleFileSelect(file) {
@@ -129,6 +256,7 @@ async function handleFileSelect(file) {
         uploadContent.style.display = 'block';
         uploadSuccess.style.display = 'block';
         setupSection.style.display = 'block';
+        disableTraining(); // Training disabled until setup is complete
     } catch (error) {
         showError(`Upload failed: ${error.message}`);
         uploadProgress.style.display = 'none';
@@ -198,10 +326,18 @@ async function loadProjects() {
                 const option = document.createElement('option');
                 option.value = project.project_dir;
                 option.textContent = `${project.name} (${project.frame_count} frames)`;
+                if (project.project_dir === currentProjectDir) {
+                    option.selected = true;
+                }
                 projectSelect.appendChild(option);
             });
             
             loadProjectBtn.style.display = 'inline-block';
+            
+            // Update production project selector if in Stage 2
+            if (currentStage === 2) {
+                updateProductionDefaults();
+            }
         }
     } catch (error) {
         console.error('Failed to load projects:', error);
@@ -240,7 +376,7 @@ document.getElementById('start-setup-btn').addEventListener('click', async () =>
         setupSection.style.display = 'none';
         progressSection.style.display = 'block';
         pollProgress(currentJobId, async () => {
-            // Setup complete, show training section
+            // Setup complete, enable training
             await loadProjects(); // Refresh project list
             
             // Get project directory from result
@@ -254,8 +390,7 @@ document.getElementById('start-setup-btn').addEventListener('click', async () =>
                 console.error('Failed to get project directory:', error);
             }
             
-            trainingSection.style.display = 'block';
-            productionSection.style.display = 'block';
+            enableTraining();
         });
     } catch (error) {
         showError(error.message);
@@ -305,10 +440,21 @@ document.getElementById('start-training-btn').addEventListener('click', async ()
         
         trainingSection.style.display = 'none';
         progressSection.style.display = 'block';
-        pollProgress(currentJobId, () => {
-            // Training complete
-            trainingSection.style.display = 'block';
-            productionSection.style.display = 'block';
+        pollProgress(currentJobId, async () => {
+            // Training complete - get result and show ready for Stage 2 message
+            try {
+                const progressResponse = await fetch(`/api/progress/${currentJobId}`);
+                const progressData = await progressResponse.json();
+                if (progressData.result && progressData.result.detector_id) {
+                    trainedDetectorId = progressData.result.detector_id;
+                }
+            } catch (error) {
+                console.error('Failed to get training result:', error);
+            }
+            
+            progressSection.style.display = 'none';
+            readyForStage2.style.display = 'block';
+            trainingSection.style.display = 'none';
         });
     } catch (error) {
         showError(error.message);
@@ -317,8 +463,11 @@ document.getElementById('start-training-btn').addEventListener('click', async ()
 
 // Production
 document.getElementById('start-production-btn').addEventListener('click', async () => {
-    if (!currentProjectDir) {
-        showError('Please select or create a project first');
+    // Get project from production selector (Stage 2) or use current project (Stage 1)
+    const selectedProjectDir = productionProjectSelect.value || currentProjectDir;
+    
+    if (!selectedProjectDir) {
+        showError('Please select a project');
         return;
     }
     
@@ -331,7 +480,7 @@ document.getElementById('start-production-btn').addEventListener('click', async 
     const detectorIds = detectorIdsStr.split(/\s+/).filter(id => id.length > 0);
     
     const config = {
-        project_dir: currentProjectDir,
+        project_dir: selectedProjectDir,
         detector_ids: detectorIds,
         frame_stride: parseInt(document.getElementById('frame-stride').value) || 1,
         human_review: document.getElementById('human-review-prod').value
@@ -406,8 +555,14 @@ function updateProgress(data) {
 
 // Results
 function showResults(jobId) {
+    // Only show results in Stage 2
+    if (currentStage !== 2) {
+        return;
+    }
+    
     progressSection.style.display = 'none';
     resultsSection.style.display = 'block';
+    productionSection.style.display = 'none'; // Hide production form when showing results
     
     const downloadBtn = document.getElementById('download-video');
     const previewBtn = document.getElementById('preview-video');
@@ -427,14 +582,34 @@ function showResults(jobId) {
 // Download video with retry logic
 async function downloadVideoWithRetry(jobId, maxRetries = 3) {
     const downloadBtn = document.getElementById('download-video');
-    const originalText = downloadBtn.textContent;
+    const originalHTML = downloadBtn.innerHTML;
+    const originalHref = downloadBtn.href;
+    
+    // Store original text (extract from innerHTML)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = originalHTML;
+    const originalText = tempDiv.textContent.trim();
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-            downloadBtn.textContent = attempt === 0 
+            // Update button text while preserving structure
+            const loadingText = attempt === 0 
                 ? 'Downloading...' 
                 : `Retrying download (${attempt + 1}/${maxRetries})...`;
-            downloadBtn.disabled = true;
+            
+            // Disable by removing href and adding disabled class
+            downloadBtn.href = '#';
+            downloadBtn.classList.add('disabled');
+            downloadBtn.style.pointerEvents = 'none';
+            downloadBtn.style.opacity = '0.6';
+            
+            // Update text while preserving SVG
+            const svg = downloadBtn.querySelector('svg');
+            if (svg) {
+                downloadBtn.innerHTML = svg.outerHTML + ' ' + loadingText;
+            } else {
+                downloadBtn.textContent = loadingText;
+            }
             
             // Add small delay before first attempt to allow filesystem sync
             if (attempt === 0) {
@@ -468,8 +643,12 @@ async function downloadVideoWithRetry(jobId, maxRetries = 3) {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 
-                downloadBtn.textContent = originalText;
-                downloadBtn.disabled = false;
+                // Restore button
+                downloadBtn.innerHTML = originalHTML;
+                downloadBtn.href = originalHref;
+                downloadBtn.classList.remove('disabled');
+                downloadBtn.style.pointerEvents = '';
+                downloadBtn.style.opacity = '';
                 return; // Success
             } else {
                 const error = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -483,37 +662,61 @@ async function downloadVideoWithRetry(jobId, maxRetries = 3) {
                 const delay = 500 * Math.pow(2, attempt);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else {
-                // All retries failed
-                downloadBtn.textContent = originalText;
-                downloadBtn.disabled = false;
+                // All retries failed - restore button
+                downloadBtn.innerHTML = originalHTML;
+                downloadBtn.href = originalHref;
+                downloadBtn.classList.remove('disabled');
+                downloadBtn.style.pointerEvents = '';
+                downloadBtn.style.opacity = '';
                 showError(`Failed to download video after ${maxRetries} attempts: ${error.message}`);
             }
         }
     }
 }
 
-// New job
-document.getElementById('new-job').addEventListener('click', () => {
-    // Reset state
-    currentJobId = null;
-    currentProjectDir = null;
-    uploadedFileJobId = null;
-    videoFileInput.value = '';
-    
-    // Hide all sections
-    uploadSection.style.display = 'none';
-    setupSection.style.display = 'none';
-    trainingSection.style.display = 'none';
-    productionSection.style.display = 'none';
-    progressSection.style.display = 'none';
-    resultsSection.style.display = 'none';
-    uploadSuccess.style.display = 'none';
-    
-    // Reload projects
-    loadProjects();
-    
-    hideError();
-});
+// New project button (Stage 1)
+if (newProjectStage1Btn) {
+    newProjectStage1Btn.addEventListener('click', () => {
+        // Reset state
+        currentJobId = null;
+        currentProjectDir = null;
+        uploadedFileJobId = null;
+        trainedDetectorId = null;
+        videoFileInput.value = '';
+        
+        // Reset to Stage 1
+        showStage1();
+        
+        // Show upload section, hide others
+        uploadSection.style.display = 'block';
+        projectSelectionSection.style.display = 'none';
+        setupSection.style.display = 'none';
+        trainingSection.style.display = 'none';
+        readyForStage2.style.display = 'none';
+        uploadSuccess.style.display = 'none';
+        
+        // Reload projects
+        loadProjects();
+        
+        hideError();
+    });
+}
+
+// Produce another video button (Stage 2)
+if (produceAnotherBtn) {
+    produceAnotherBtn.addEventListener('click', () => {
+        // Hide results, show production section
+        resultsSection.style.display = 'none';
+        productionSection.style.display = 'block';
+        
+        // Reset production form but keep project selected
+        document.getElementById('detector-ids').value = trainedDetectorId || '';
+        document.getElementById('frame-stride').value = '1';
+        document.getElementById('human-review-prod').value = 'NEVER';
+        
+        hideError();
+    });
+}
 
 // Error handling
 function showError(message) {

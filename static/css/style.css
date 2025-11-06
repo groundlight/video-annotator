@@ -48,6 +48,81 @@ header h1 {
     font-size: 1.5em;
 }
 
+.card h3 {
+    margin-bottom: 20px;
+    color: #667eea;
+    font-size: 1.3em;
+}
+
+.stage-container {
+    margin-bottom: 40px;
+}
+
+.stage-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.stage-header h2 {
+    color: white;
+    font-size: 2em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.stage-description {
+    font-size: 1.1em;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.stage-nav-btn {
+    margin-top: 15px;
+    display: inline-block;
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.button-group .btn-primary,
+.button-group .btn-secondary {
+    flex: 1;
+    min-width: 200px;
+}
+
+.disabled-message {
+    padding: 20px;
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    color: #856404;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.disabled-message p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.training-section-disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.training-section-disabled #training-content {
+    filter: grayscale(50%);
+}
+
 .upload-area {
     border: 3px dashed #667eea;
     border-radius: 8px;
@@ -387,8 +462,10 @@ small {
     background: #10b981;
 }
 
-.preview-btn:hover {
-    background: #059669;
+.download-btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .error-card {
