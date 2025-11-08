@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Annotator - AI-Powered Video Annotation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css-shared/axon-ui.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -19,7 +20,7 @@
                 <div class="stage-header">
                     <h2>Stage 1: Choose Video and Train Detector</h2>
                     <p class="stage-description">Upload a video, set up your project, and train a detector</p>
-                    <button type="button" id="go-to-stage-2-btn" class="btn-secondary stage-nav-btn">Go to Stage 2 →</button>
+                    <button type="button" id="go-to-stage-2-btn" class="btn btn-secondary stage-nav-btn">Go to Stage 2 →</button>
                 </div>
 
                 <!-- Upload Section (primary - shown first) -->
@@ -50,7 +51,7 @@
                                 <div class="upload-success-title">✓ File uploaded successfully</div>
                                 <div class="upload-success-filename" id="uploaded-filename"></div>
                             </div>
-                            <button type="button" id="remove-file-btn" class="remove-file-btn">Remove</button>
+                            <button type="button" id="remove-file-btn" class="btn btn-secondary">Remove</button>
                         </div>
                     </div>
                     <div style="margin-top: 15px; text-align: center;">
@@ -66,7 +67,7 @@
                         <select id="project-select" class="form-select">
                             <option value="">-- Select a project --</option>
                         </select>
-                        <button type="button" id="load-project-btn" class="btn-secondary" style="display: none;">Load Project</button>
+                        <button type="button" id="load-project-btn" class="btn btn-secondary" style="display: none;">Load Project</button>
                     </div>
                     <div style="margin-top: 15px; text-align: center;">
                         <a href="#" id="toggle-upload-section" style="color: #60a5fa; text-decoration: underline; cursor: pointer;">Or upload a new video</a>
@@ -86,7 +87,7 @@
                         <input type="number" id="save-frames" value="10" min="0" step="1">
                         <small>Number of diverse sample frames to save (default: 10)</small>
                     </div>
-                    <button id="start-setup-btn" class="btn-primary">Start Setup</button>
+                    <button id="start-setup-btn" class="btn btn-primary">Start Setup</button>
                 </div>
 
                 <!-- Training Section -->
@@ -140,7 +141,7 @@
                                 Submit asynchronously (don't wait for responses)
                             </label>
                         </div>
-                        <button id="start-training-btn" class="btn-primary">Start Training</button>
+                        <button id="start-training-btn" class="btn btn-primary">Start Training</button>
                     </div>
                 </div>
 
@@ -149,14 +150,14 @@
                     <h3>✓ Training Complete!</h3>
                     <p>You're ready to produce annotated videos. You can proceed to Stage 2 or continue working in Stage 1.</p>
                     <div class="button-group">
-                        <button id="proceed-to-stage-2-btn" class="btn-primary">Proceed to Stage 2: Produce Annotated Video</button>
-                        <button id="stay-in-stage-1-btn" class="btn-secondary">Stay in Stage 1</button>
+                        <button id="proceed-to-stage-2-btn" class="btn btn-primary">Proceed to Stage 2: Produce Annotated Video</button>
+                        <button id="stay-in-stage-1-btn" class="btn btn-secondary">Stay in Stage 1</button>
                     </div>
                 </div>
 
                 <!-- Start New Project Button -->
                 <div class="card" style="margin-top: 20px;">
-                    <button id="new-project-stage1" class="btn-secondary">Start New Project</button>
+                    <button id="new-project-stage1" class="btn btn-secondary">Start New Project</button>
                 </div>
             </section>
 
@@ -165,7 +166,7 @@
                 <div class="stage-header">
                     <h2>Stage 2: Produce Annotated Video</h2>
                     <p class="stage-description">Generate annotated videos using your trained detectors</p>
-                    <button type="button" id="go-to-stage-1-btn" class="btn-secondary stage-nav-btn">← Go to Stage 1</button>
+                    <button type="button" id="go-to-stage-1-btn" class="btn btn-secondary stage-nav-btn">← Go to Stage 1</button>
                 </div>
 
                 <!-- Production Section -->
@@ -196,7 +197,7 @@
                             <option value="ALWAYS">ALWAYS - Always escalate to cloud labelers</option>
                         </select>
                     </div>
-                    <button id="start-production-btn" class="btn-primary">Start Production</button>
+                    <button id="start-production-btn" class="btn btn-primary">Start Production</button>
                 </div>
 
                 <!-- Results Section (only shown in Stage 2) -->
@@ -213,7 +214,7 @@
                         <div class="download-links">
                             <h3>Download & Preview</h3>
                             <div class="link-group">
-                                <a id="download-video" href="#" class="download-btn" download style="display: none;">
+                                <a id="download-video" href="#" class="btn btn-primary download-btn" download style="display: none;">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                         <polyline points="7 10 12 15 17 10"></polyline>
@@ -221,7 +222,7 @@
                                     </svg>
                                     Download Annotated Video
                                 </a>
-                                <a id="preview-video" href="#" class="download-btn preview-btn" style="display: none;" target="_blank">
+                                <a id="preview-video" href="#" class="btn btn-success download-btn preview-btn" style="display: none;" target="_blank">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <polygon points="5 3 19 12 5 21 5 3"></polygon>
                                     </svg>
@@ -230,7 +231,7 @@
                             </div>
                         </div>
                     </div>
-                    <button id="produce-another-btn" class="btn-primary">Produce Another Video</button>
+                    <button id="produce-another-btn" class="btn btn-primary">Produce Another Video</button>
                 </div>
             </section>
 
@@ -245,7 +246,7 @@
                     <div class="progress-info">
                         <div class="info-item">
                             <span class="info-label">Status:</span>
-                            <span id="status-message" class="state-badge">Initializing...</span>
+                            <span id="status-message" class="badge state-badge">Initializing...</span>
                         </div>
                     </div>
                 </div>

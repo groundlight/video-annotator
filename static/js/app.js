@@ -500,6 +500,7 @@ document.getElementById('start-production-btn').addEventListener('click', async 
         
         const data = await response.json();
         currentJobId = data.job_id;
+        console.log(`Production job started with job_id: ${currentJobId}`);
         
         productionSection.style.display = 'none';
         progressSection.style.display = 'block';
@@ -518,11 +519,49 @@ function pollProgress(jobId, onComplete) {
         clearInterval(progressInterval);
     }
     
+    let consecutive404s = 0;
+    const max404s = 10; // Stop polling after 10 consecutive 404s (20 seconds)
+    
     progressInterval = setInterval(async () => {
         try {
-            const response = await fetch(`/api/progress/${jobId}`);
-            const data = await response.json();
+            const url = `/api/progress/${jobId}`;
+            const response = await fetch(url);
             
+            // Check if response is OK before parsing JSON
+            if (!response.ok) {
+                if (response.status === 404) {
+                    consecutive404s++;
+                    // Job might not be created yet, continue polling for a bit
+                    if (consecutive404s >= max404s) {
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        console.error(`Job ${jobId} not found after ${max404s * 2} seconds. The job may have failed to start.`);
+                        showError(`Job ${jobId} not found after ${max404s * 2} seconds. The job may have failed to start.`);
+                    } else if (consecutive404s === 1) {
+                        // Log first 404 for debugging
+                        console.warn(`Job ${jobId} not found (404). Will retry up to ${max404s} times.`);
+                    }
+                    // Continue polling on 404 (job might not be created yet)
+                    return;
+                } else {
+                    // Other HTTP errors - stop polling
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                    const errorText = await response.text();
+                    console.error(`Failed to fetch progress: HTTP ${response.status} - ${errorText}`);
+                    showError(`Failed to fetch progress: HTTP ${response.status} - ${errorText}`);
+                    return;
+                }
+            }
+            
+            // Reset 404 counter on successful response
+            if (consecutive404s > 0) {
+                console.log(`Job ${jobId} found after ${consecutive404s} retries.`);
+                consecutive404s = 0;
+            }
+            
+            const data = await response.json();
+            console.log(`Progress update: status=${data.status}, progress=${data.progress}%, message=${data.message}`);
             updateProgress(data);
             
             if (data.status === 'completed') {
@@ -537,7 +576,10 @@ function pollProgress(jobId, onComplete) {
                 showError(data.error || 'Job failed');
             }
         } catch (error) {
-            console.error('Failed to poll progress:', error);
+            // Only log non-404 errors to avoid console spam
+            if (!error.message.includes('404') && !error.message.includes('Unexpected token')) {
+                console.error('Failed to poll progress:', error);
+            }
         }
     }, 2000); // Poll every 2 seconds
 }

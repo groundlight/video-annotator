@@ -19,11 +19,21 @@ There are at least a couple ways to set up your development environment.  Pick o
 
 ### Simple setup (venv, pip)
 
+1. Clone the repository and initialize submodules:
+```
+git clone <repo-url>
+cd video-annotator
+git submodule update --init --recursive
+```
+
+2. Create virtual environment and install dependencies:
 ```
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+**Note**: The `shared-ui` submodule contains shared CSS/JS components. Make sure to initialize it with `git submodule update --init --recursive` after cloning.
 
 ### Advanced setup (conda, direnv, poetry)
 

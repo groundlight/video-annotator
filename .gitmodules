@@ -1,0 +1,3 @@
+[submodule "shared-ui"]
+	path = shared-ui
+	url = git@github.com:groundlight/shared-ui.git

@@ -1,17 +1,11 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* 
+ * Video Annotator App-Specific Styles
+ * 
+ * This file contains only app-specific layout and spacing adjustments.
+ * All colors, buttons, forms, and components come from shared-ui (Axon UI dark theme).
+ */
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-    color: #333;
-}
-
+/* App-specific layout */
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -19,14 +13,12 @@ body {
 
 header {
     text-align: center;
-    color: white;
     margin-bottom: 30px;
 }
 
 header h1 {
     font-size: 3em;
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
 }
 
 .subtitle {
@@ -34,56 +26,14 @@ header h1 {
     opacity: 0.9;
 }
 
-.card {
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-}
-
-.card h2 {
-    margin-bottom: 20px;
-    color: #667eea;
-    font-size: 1.5em;
-}
-
-.card h3 {
-    margin-bottom: 20px;
-    color: #667eea;
-    font-size: 1.3em;
-}
-
+/* Stage-specific styles */
 .stage-container {
     margin-bottom: 40px;
 }
 
-.stage-header {
-    text-align: center;
-    color: white;
-    margin-bottom: 30px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-}
-
-.stage-header h2 {
-    color: white;
-    font-size: 2em;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-}
-
-.stage-description {
-    font-size: 1.1em;
-    opacity: 0.9;
-    margin: 0;
-}
-
 .stage-nav-btn {
     margin-top: 15px;
-    display: inline-block;
+    /* Don't override display - let shared .btn class handle it */
 }
 
 .button-group {
@@ -99,21 +49,6 @@ header h1 {
     min-width: 200px;
 }
 
-.disabled-message {
-    padding: 20px;
-    background: #fff3cd;
-    border: 2px solid #ffc107;
-    border-radius: 8px;
-    color: #856404;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.disabled-message p {
-    margin: 0;
-    font-weight: 500;
-}
-
 .training-section-disabled {
     opacity: 0.6;
     pointer-events: none;
@@ -123,88 +58,26 @@ header h1 {
     filter: grayscale(50%);
 }
 
-.upload-area {
-    border: 3px dashed #667eea;
-    border-radius: 8px;
-    padding: 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: #f8f9ff;
+/* App-specific spacing adjustments */
+.form-group {
+    margin-bottom: 20px;
 }
 
-.upload-area:hover {
-    border-color: #764ba2;
-    background: #f0f2ff;
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
-.upload-area.dragover {
-    border-color: #764ba2;
-    background: #e8ebff;
-    transform: scale(1.02);
-}
-
-.upload-content svg {
-    color: #667eea;
-    margin-bottom: 15px;
-}
-
-.upload-content p {
-    margin: 10px 0;
-    color: #666;
-}
-
-.file-info {
-    font-size: 0.9em;
-    color: #999;
-}
-
-.upload-progress {
-    padding: 20px;
-    text-align: center;
-}
-
-.progress-bar-small {
-    position: relative;
-    width: 100%;
-    height: 30px;
-    background: #e0e0e0;
-    border-radius: 15px;
-    overflow: hidden;
-    margin-bottom: 10px;
-}
-
-.progress-fill-small {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    width: 0%;
-    transition: width 0.1s ease;
-    border-radius: 15px;
-}
-
-.progress-text-small {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: 600;
-    font-size: 0.9em;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-}
-
-.upload-status {
-    margin-top: 10px;
-    color: #666;
-    font-size: 0.95em;
-}
-
-.upload-success {
+.progress-container {
     margin-top: 20px;
-    padding: 15px;
-    background: #d4edda;
-    border: 1px solid #c3e6cb;
-    border-radius: 8px;
+}
+
+.progress-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .upload-success-info {
@@ -216,193 +89,11 @@ header h1 {
 
 .upload-success-title {
     font-weight: 600;
-    color: #155724;
     margin-bottom: 5px;
 }
 
 .upload-success-filename {
-    color: #155724;
     font-size: 0.95em;
-}
-
-.remove-file-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background 0.2s;
-}
-
-.remove-file-btn:hover {
-    background: #c82333;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.form-select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 1em;
-    transition: border-color 0.2s;
-    background: white;
-}
-
-.form-select:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: #333;
-}
-
-input[type="text"],
-input[type="number"],
-input[type="password"] {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 1em;
-    transition: border-color 0.2s;
-}
-
-input[type="text"]:focus,
-input[type="number"]:focus,
-input[type="password"]:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-input[type="checkbox"] {
-    margin-right: 8px;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-small {
-    display: block;
-    margin-top: 5px;
-    color: #666;
-    font-size: 0.9em;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 1.1em;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    width: 100%;
-    margin-top: 10px;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-}
-
-.btn-secondary {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 0.9em;
-    cursor: pointer;
-    margin-left: 10px;
-    transition: background 0.2s;
-}
-
-.btn-secondary:hover {
-    background: #5a6268;
-}
-
-.progress-container {
-    margin-top: 20px;
-}
-
-.progress-bar {
-    position: relative;
-    width: 100%;
-    height: 40px;
-    background: #e0e0e0;
-    border-radius: 20px;
-    overflow: hidden;
-    margin-bottom: 20px;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 20px;
-}
-
-.progress-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-weight: 600;
-    color: white;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-}
-
-.progress-info {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.info-item {
-    padding: 12px;
-    background: #f8f9ff;
-    border-radius: 6px;
-}
-
-.info-label {
-    display: block;
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 5px;
-}
-
-.state-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    background: #667eea;
-    color: white;
-    border-radius: 20px;
-    font-size: 0.9em;
-    font-weight: 500;
 }
 
 .results-content {
@@ -414,23 +105,18 @@ small {
 }
 
 .success-message svg {
-    color: #10b981;
+    color: var(--color-success);
     margin-bottom: 15px;
 }
 
 .success-message p {
     font-size: 1.2em;
-    color: #10b981;
+    color: var(--color-success);
     font-weight: 600;
 }
 
 .download-links {
     margin-top: 30px;
-}
-
-.download-links h3 {
-    margin-bottom: 20px;
-    color: #333;
 }
 
 .link-group {
@@ -439,49 +125,18 @@ small {
     gap: 15px;
 }
 
+/* Download buttons should use shared button classes */
+/* Add btn class to HTML elements using download-btn */
 .download-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 20px;
-    background: #667eea;
-    color: white;
+    /* Extend shared button styles - only add download-specific styles */
     text-decoration: none;
-    border-radius: 8px;
-    transition: background 0.2s, transform 0.2s;
-    font-weight: 500;
-}
-
-.download-btn:hover {
-    background: #764ba2;
-    transform: translateY(-2px);
-}
-
-.preview-btn {
-    background: #10b981;
+    /* Let shared button hover styles handle all hover states - no override needed */
 }
 
 .download-btn.disabled {
     opacity: 0.6;
     cursor: not-allowed;
     pointer-events: none;
-}
-
-.error-card {
-    background: #fee;
-    border: 2px solid #ff4757;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: #c92a2a;
-}
-
-.error-card svg {
-    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -501,4 +156,3 @@ small {
         font-size: 2em;
     }
 }
-

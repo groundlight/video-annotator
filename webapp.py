@@ -518,18 +518,103 @@ def produce_video_job(job_id, project_dir, detector_ids, frame_stride, human_rev
         job['progress'] = 20
         job['message'] = 'Starting video production...'
         
-        # Call infer_and_produce_video (includes optimization)
-        # Note: web_preview_port=0 disables the web preview server
-        infer_and_produce_video(
-            project=project,
-            detector_ids=detector_ids,
-            frame_stride=frame_stride,
-            web_preview_port=0,  # Disable web preview server
-            human_review=human_review
-        )
+        # Start progress update thread to simulate progress during video production
+        # Since infer_and_produce_video doesn't report progress, we'll estimate based on time
+        import threading
+        import time
+        start_time = time.time()
+        progress_thread_running = threading.Event()
+        progress_thread_running.set()
+        
+        def update_progress_estimate():
+            """Update progress estimate while video is being produced"""
+            base_progress = 20
+            max_progress = 90  # Leave 10% for file finding and completion
+            
+            # Calculate estimated duration based on video characteristics
+            estimated_duration = 60  # Default fallback: 1 minute
+            
+            try:
+                import cv2
+                # Get video metadata for better estimation
+                cap = cv2.VideoCapture(project.video_path)
+                if cap.isOpened():
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    fps = cap.get(cv2.CAP_PROP_FPS) or 30  # Default to 30 if unavailable
+                    cap.release()
+                    
+                    # Get file size for additional estimation
+                    file_size_mb = os.path.getsize(project.video_path) / (1024 * 1024)
+                    
+                    # Estimate processing time:
+                    # - Base time per frame (inference + annotation): ~0.3-0.5 seconds per frame (depends on detectors)
+                    # - Frame stride reduces inference frequency
+                    # - More detectors = slower processing
+                    inference_frames = total_frames // frame_stride if frame_stride > 0 else total_frames
+                    time_per_inference_frame = 0.4 * len(detector_ids)  # 0.4s per detector per inference frame (more conservative)
+                    inference_time = inference_frames * time_per_inference_frame
+                    
+                    # Video writing time (depends on file size and FPS)
+                    video_duration = total_frames / fps if fps > 0 else 60  # Fallback to 60s if FPS unavailable
+                    writing_time = video_duration * 0.2  # Rough estimate: 20% of video duration for writing (more conservative)
+                    
+                    # Optimization time (depends on file size)
+                    optimization_time = file_size_mb * 1.0  # Rough estimate: 1.0 seconds per MB (more conservative)
+                    
+                    estimated_duration = inference_time + writing_time + optimization_time
+                    # Add 50% buffer for safety (increased from 20%)
+                    estimated_duration = estimated_duration * 1.5
+                    
+                    # Minimum estimate: 30 seconds, Maximum: 10 minutes
+                    estimated_duration = max(30, min(estimated_duration, 600))
+                    
+                    logger.info(f"Estimated video production time: {estimated_duration:.1f}s (frames: {total_frames}, fps: {fps:.1f}, stride: {frame_stride}, detectors: {len(detector_ids)}, size: {file_size_mb:.1f}MB)")
+                else:
+                    logger.warning(f"Could not open video file for estimation: {project.video_path}")
+            except Exception as e:
+                logger.warning(f"Error calculating video estimate: {e}, using default 60s")
+            
+            min_progress_rate = 0.5  # Minimum 0.5% per second (reaches 90% in ~2.3 minutes as fallback)
+            
+            while progress_thread_running.is_set() and job['status'] == 'processing':
+                elapsed = time.time() - start_time
+                
+                # Linear progression based on estimated duration
+                linear_progress = base_progress + int((max_progress - base_progress) * min(elapsed / estimated_duration, 1.0))
+                
+                # Guaranteed minimum progress (0.5% per second) as fallback
+                guaranteed_progress = base_progress + int(min_progress_rate * elapsed)
+                
+                # Use the maximum of both to ensure progress always moves forward
+                estimated_progress = min(max(linear_progress, guaranteed_progress), max_progress)
+                
+                # Always update if we have new progress (don't wait for it to be higher)
+                if estimated_progress > job.get('progress', 0):
+                    job['progress'] = estimated_progress
+                    job['message'] = f'Processing video... ({estimated_progress}%)'
+                
+                time.sleep(2)  # Update every 2 seconds
+        
+        progress_thread = threading.Thread(target=update_progress_estimate, daemon=True)
+        progress_thread.start()
+        
+        try:
+            # Call infer_and_produce_video (includes optimization)
+            # Note: web_preview_port=0 disables the web preview server
+            infer_and_produce_video(
+                project=project,
+                detector_ids=detector_ids,
+                frame_stride=frame_stride,
+                web_preview_port=0,  # Disable web preview server
+                human_review=human_review
+            )
+        finally:
+            # Stop progress estimation thread
+            progress_thread_running.clear()
+            job['progress'] = 90
+            job['message'] = 'Video production complete, finding output file...'
         
         # Wait a moment for filesystem to sync after optimization
-        import time
         time.sleep(0.5)
         
         # Find the output video file with retry logic
@@ -578,6 +663,9 @@ def produce_video_job(job_id, project_dir, detector_ids, frame_stride, human_rev
         logger.info(f"Production job {job_id} completed successfully: {output_video}")
         
     except Exception as e:
+        # Stop progress estimation thread if still running
+        if 'progress_thread_running' in locals():
+            progress_thread_running.clear()
         logger.error(f"Production job {job_id} failed: {e}", exc_info=True)
         job['status'] = 'error'
         job['message'] = f'Error: {str(e)}'
@@ -588,10 +676,10 @@ def produce_video_job(job_id, project_dir, detector_ids, frame_stride, human_rev
 @app.route('/api/progress/<job_id>', methods=['GET'])
 def get_progress(job_id):
     """Get processing progress"""
-    logger.debug(f"Progress request for job_id={job_id}")
+    logger.debug(f"Progress request for job_id={job_id}, jobs keys: {list(jobs.keys())}")
     
     if job_id not in jobs:
-        logger.warning(f"Job {job_id} not found")
+        logger.warning(f"Job {job_id} not found in jobs dict. Available jobs: {list(jobs.keys())}")
         return jsonify({'error': 'Job not found'}), 404
     
     job = jobs[job_id]
@@ -608,6 +696,7 @@ def get_progress(job_id):
         if 'error_traceback' in job:
             response['error_traceback'] = job['error_traceback']
     
+    logger.debug(f"Progress response for {job_id}: status={response['status']}, progress={response['progress']}")
     return jsonify(response)
 
 
