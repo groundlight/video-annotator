@@ -14,14 +14,38 @@
             <p class="subtitle">Efficiently annotate videos using AI-powered frame selection and Groundlight detectors</p>
         </header>
 
+        <!-- Navigation Bar -->
+        <nav class="stage-navigation">
+            <div class="stage-nav-buttons">
+                <button type="button" id="nav-stage-1" class="stage-nav-button active" data-stage="1">
+                    <span class="stage-number">1</span>
+                    <span class="stage-label">Project Setup</span>
+                    <span class="stage-checkmark" style="display: none;">✓</span>
+                </button>
+                <button type="button" id="nav-stage-2" class="stage-nav-button" data-stage="2">
+                    <span class="stage-number">2</span>
+                    <span class="stage-label">Train Detector</span>
+                    <span class="stage-checkmark" style="display: none;">✓</span>
+                </button>
+                <button type="button" id="nav-stage-3" class="stage-nav-button" data-stage="3">
+                    <span class="stage-number">3</span>
+                    <span class="stage-label">Produce Annotated Video</span>
+                    <span class="stage-checkmark" style="display: none;">✓</span>
+                </button>
+            </div>
+            <div id="navigation-error" class="navigation-error" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span id="navigation-error-text"></span>
+            </div>
+        </nav>
+
         <main>
-            <!-- Stage 1: Choose Video and Train Detector -->
+            <!-- Stage 1: Project Setup -->
             <section id="stage-1" class="stage-container">
-                <div class="stage-header">
-                    <h2>Stage 1: Choose Video and Train Detector</h2>
-                    <p class="stage-description">Upload a video, set up your project, and train a detector</p>
-                    <button type="button" id="go-to-stage-2-btn" class="btn btn-secondary stage-nav-btn">Go to Stage 2 →</button>
-                </div>
 
                 <!-- Upload Section (primary - shown first) -->
                 <div id="upload-section" class="card">
@@ -90,8 +114,27 @@
                     <button id="start-setup-btn" class="btn btn-primary">Start Setup</button>
                 </div>
 
+                <!-- Stage 1 Completion CTA -->
+                <div id="stage-1-cta" class="card stage-cta" style="display: none; margin-top: 20px;">
+                    <div class="cta-content">
+                        <div class="cta-text">
+                            <h3>✓ Project Setup Complete!</h3>
+                            <p>You're ready to train a detector. Proceed to Stage 2 to configure and train your detector.</p>
+                        </div>
+                        <button id="proceed-to-stage-2-cta" class="btn btn-primary cta-button">Proceed to Stage 2: Train Detector →</button>
+                    </div>
+                </div>
+
+                <!-- Start New Project Button -->
+                <div class="card" style="margin-top: 20px;">
+                    <button id="new-project-stage1" class="btn btn-secondary">Start New Project</button>
+                </div>
+            </section>
+
+            <!-- Stage 2: Train Detector -->
+            <section id="stage-2" class="stage-container" style="display: none;">
                 <!-- Training Section -->
-                <div id="training-section" class="card" style="display: none;">
+                <div id="training-section" class="card">
                     <h3>Train Detector</h3>
                     <div id="training-disabled-message" class="disabled-message" style="display: none;">
                         <p>Please complete project setup first before training a detector.</p>
@@ -145,29 +188,20 @@
                     </div>
                 </div>
 
-                <!-- Ready for Stage 2 Message -->
-                <div id="ready-for-stage-2" class="card success-message" style="display: none;">
-                    <h3>✓ Training Complete!</h3>
-                    <p>You're ready to produce annotated videos. You can proceed to Stage 2 or continue working in Stage 1.</p>
-                    <div class="button-group">
-                        <button id="proceed-to-stage-2-btn" class="btn btn-primary">Proceed to Stage 2: Produce Annotated Video</button>
-                        <button id="stay-in-stage-1-btn" class="btn btn-secondary">Stay in Stage 1</button>
+                <!-- Stage 2 Completion CTA -->
+                <div id="stage-2-cta" class="card stage-cta" style="display: none; margin-top: 20px;">
+                    <div class="cta-content">
+                        <div class="cta-text">
+                            <h3>✓ Detector Training Complete!</h3>
+                            <p>You're ready to produce annotated videos. Proceed to Stage 3 to generate your annotated video.</p>
+                        </div>
+                        <button id="proceed-to-stage-3-cta" class="btn btn-primary cta-button">Proceed to Stage 3: Produce Annotated Video →</button>
                     </div>
-                </div>
-
-                <!-- Start New Project Button -->
-                <div class="card" style="margin-top: 20px;">
-                    <button id="new-project-stage1" class="btn btn-secondary">Start New Project</button>
                 </div>
             </section>
 
-            <!-- Stage 2: Produce Annotated Video -->
-            <section id="stage-2" class="stage-container" style="display: none;">
-                <div class="stage-header">
-                    <h2>Stage 2: Produce Annotated Video</h2>
-                    <p class="stage-description">Generate annotated videos using your trained detectors</p>
-                    <button type="button" id="go-to-stage-1-btn" class="btn btn-secondary stage-nav-btn">← Go to Stage 1</button>
-                </div>
+            <!-- Stage 3: Produce Annotated Video -->
+            <section id="stage-3" class="stage-container" style="display: none;">
 
                 <!-- Production Section -->
                 <div id="production-section" class="card">
@@ -200,7 +234,7 @@
                     <button id="start-production-btn" class="btn btn-primary">Start Production</button>
                 </div>
 
-                <!-- Results Section (only shown in Stage 2) -->
+                <!-- Results Section (only shown in Stage 3) -->
                 <div id="results-section" class="card" style="display: none;">
                     <h2>Results</h2>
                     <div class="results-content">

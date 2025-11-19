@@ -154,9 +154,23 @@ Video Annotator is a web-based application that efficiently extracts diverse fra
 
 ### UI Components
 
-The interface is organized into two main stages with clear navigation between them.
+The interface is organized into three main stages with a persistent navigation bar at the top.
 
-#### Stage 1: Choose Video and Train Detector
+#### Navigation Bar
+
+- **Persistent Navigation**: Always visible at the top of the page
+- **Three Stage Buttons**: 
+  - Stage 1: Project Setup
+  - Stage 2: Train Detector
+  - Stage 3: Produce Annotated Video
+- **Visual Indicators**:
+  - Active stage highlighted in primary color
+  - Completed stages show checkmark (✓)
+  - Disabled stages (prerequisites not met) shown with reduced opacity
+- **Error Messages**: Displayed in navigation bar when user attempts to access a stage without completing prerequisites
+- **Access Control**: Users can click any stage at any time, but error messages guide them to complete prerequisites first
+
+#### Stage 1: Project Setup
 
 1. **Upload Section** (Primary - shown first)
    - Drag-and-drop area
@@ -177,7 +191,18 @@ The interface is organized into two main stages with clear navigation between th
    - Start setup button
    - Shown after successful video upload
 
-4. **Training Section**
+4. **Stage 1 Completion CTA** (shown after setup completes)
+   - Success message: "✓ Project Setup Complete!"
+   - Description: "You're ready to train a detector. Proceed to Stage 2 to configure and train your detector."
+   - Button: "Proceed to Stage 2: Train Detector →"
+
+5. **Start New Project Button**
+   - Located at the end of Stage 1
+   - Resets all state and returns to upload section
+
+#### Stage 2: Train Detector
+
+1. **Training Section**
    - Detector query input (for new detectors)
    - Detector ID input (for existing detectors)
    - Confidence threshold input
@@ -186,18 +211,14 @@ The interface is organized into two main stages with clear navigation between th
    - Human review mode dropdown
    - Asynchronous submission checkbox
    - Start training button
-   - Disabled until project setup is complete
+   - Disabled message shown if Stage 1 not complete
 
-5. **Ready for Stage 2 Message**
-   - Shown after training completes
-   - "Proceed to Stage 2" button
-   - "Stay in Stage 1" button (allows continuing work in Stage 1)
+2. **Stage 2 Completion CTA** (shown after training completes)
+   - Success message: "✓ Detector Training Complete!"
+   - Description: "You're ready to produce annotated videos. Proceed to Stage 3 to generate your annotated video."
+   - Button: "Proceed to Stage 3: Produce Annotated Video →"
 
-6. **Start New Project Button**
-   - Located at the end of Stage 1
-   - Resets all state and returns to upload section
-
-#### Stage 2: Produce Annotated Video
+#### Stage 3: Produce Annotated Video
 
 1. **Production Section**
    - Project selector dropdown
@@ -206,7 +227,7 @@ The interface is organized into two main stages with clear navigation between th
    - Human review mode dropdown
    - Start production button
 
-2. **Results Section** (only shown in Stage 2)
+2. **Results Section** (only shown in Stage 3)
    - Download video button (with retry logic)
    - Preview video button (opens in new tab)
    - "Produce Another Video" button (replaces production form)
@@ -222,12 +243,16 @@ The interface is organized into two main stages with clear navigation between th
    - Error message card with icon
    - Auto-scrolls to error on display
 
-#### Navigation
+#### Navigation & Access Control
 
-- **Stage Navigation**: Manual navigation buttons in stage headers ("Go to Stage 2" / "Go to Stage 1")
-- **Stage 1 → Stage 2**: Can proceed automatically after training or navigate manually
-- **Stage 2 → Stage 1**: Manual navigation only
-- **Results Isolation**: Results from video production only appear in Stage 2, never in Stage 1
+- **Stage Navigation**: Click any stage button in navigation bar at any time
+- **Prerequisites**:
+  - Stage 1: Always accessible
+  - Stage 2: Requires Stage 1 complete (project setup done) OR existing project loaded
+  - Stage 3: Requires Stage 2 complete (detector trained) OR at least one project exists
+- **Error Messages**: Shown in navigation bar when prerequisites aren't met, but user can still navigate to see what's needed
+- **Visual Feedback**: Navigation buttons show completion status and active state
+- **CTA Buttons**: Appear at bottom of stages 1 and 2 when complete, providing clear path to next stage
 
 ## Technical Architecture
 
@@ -380,7 +405,18 @@ See `VIDEO_OPTIMIZATION.md` for details.
 
 ## Version History
 
-### Version 1.2.0 (Current)
+### Version 1.3.0 (Current)
+- **UI Reorganization**: Three-stage workflow with persistent navigation bar
+  - **Stage 1: Project Setup**: Upload video, select existing project, run frame analysis
+  - **Stage 2: Train Detector**: Configure and train detectors with Groundlight
+  - **Stage 3: Produce Annotated Video**: Generate annotated videos with trained detectors
+- **Navigation Bar**: Persistent top navigation with visual indicators for active/completed stages
+- **Access Control**: Smart validation allows navigation to any stage, with error messages for prerequisites
+- **CTA Buttons**: Completion CTAs appear at bottom of stages 1 and 2 to guide users to next stage
+- **Consistent Messaging**: Unified success/CTA pattern across all stages
+- **Improved UX**: Users can navigate freely while being guided through the workflow
+
+### Version 1.2.0
 - **UI Reorganization**: Two-stage workflow with improved navigation
   - Stage 1: Upload section is primary, project selection is secondary with toggle
   - Stage 2: Results section only appears in Stage 2, never in Stage 1

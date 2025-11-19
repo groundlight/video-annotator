@@ -3,12 +3,26 @@ let currentJobId = null;
 let currentProjectDir = null;
 let progressInterval = null;
 let uploadedFileJobId = null;
-let currentStage = 1; // 1 or 2
-let trainedDetectorId = null; // Store detector ID from Stage 1
+let currentStage = 1; // 1, 2, or 3
+let trainedDetectorId = null; // Store detector ID from Stage 2
+let availableProjects = []; // Store list of available projects
+
+// Stage completion tracking
+let stageCompletion = {
+    stage1: false,  // Project setup complete
+    stage2: false,   // Detector trained
+    stage3: false    // Video produced (optional)
+};
 
 // DOM elements
 const stage1 = document.getElementById('stage-1');
 const stage2 = document.getElementById('stage-2');
+const stage3 = document.getElementById('stage-3');
+const navStage1 = document.getElementById('nav-stage-1');
+const navStage2 = document.getElementById('nav-stage-2');
+const navStage3 = document.getElementById('nav-stage-3');
+const navigationError = document.getElementById('navigation-error');
+const navigationErrorText = document.getElementById('navigation-error-text');
 const projectSelect = document.getElementById('project-select');
 const projectSelectionSection = document.getElementById('project-selection-section');
 const loadProjectBtn = document.getElementById('load-project-btn');
@@ -23,11 +37,11 @@ const setupSection = document.getElementById('setup-section');
 const trainingSection = document.getElementById('training-section');
 const trainingDisabledMessage = document.getElementById('training-disabled-message');
 const trainingContent = document.getElementById('training-content');
-const readyForStage2 = document.getElementById('ready-for-stage-2');
-const proceedToStage2Btn = document.getElementById('proceed-to-stage-2-btn');
-const stayInStage1Btn = document.getElementById('stay-in-stage-1-btn');
-const goToStage2Btn = document.getElementById('go-to-stage-2-btn');
-const goToStage1Btn = document.getElementById('go-to-stage-1-btn');
+// CTA elements for stage completion
+const stage1Cta = document.getElementById('stage-1-cta');
+const stage2Cta = document.getElementById('stage-2-cta');
+const proceedToStage2Cta = document.getElementById('proceed-to-stage-2-cta');
+const proceedToStage3Cta = document.getElementById('proceed-to-stage-3-cta');
 const productionSection = document.getElementById('production-section');
 const productionProjectSelect = document.getElementById('production-project-select');
 const progressSection = document.getElementById('progress-section');
@@ -40,44 +54,181 @@ const produceAnotherBtn = document.getElementById('produce-another-btn');
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadProjects();
-    showStage1();
+    showStage(1);
     // Show upload section by default, hide project selection
     uploadSection.style.display = 'block';
     projectSelectionSection.style.display = 'none';
+    // Set up navigation button handlers
+    setupNavigationHandlers();
+    updateNavigationIndicators();
 });
 
-// Stage Management Functions
-function showStage1() {
-    currentStage = 1;
-    stage1.style.display = 'block';
-    stage2.style.display = 'none';
-    progressSection.style.display = 'none';
-    resultsSection.style.display = 'none'; // Hide results in Stage 1
-    hideError();
+// Navigation Handlers Setup
+function setupNavigationHandlers() {
+    navStage1.addEventListener('click', () => showStage(1));
+    navStage2.addEventListener('click', () => showStage(2));
+    navStage3.addEventListener('click', () => showStage(3));
 }
 
-function showStage2() {
-    currentStage = 2;
+// Stage Management Functions
+function showStage(stageNumber) {
+    // Always allow navigation - validate and show error if needed, but still navigate
+    const isValid = validateStageAccess(stageNumber);
+    
+    if (!isValid) {
+        // Error message already shown by validateStageAccess
+        // Still navigate to the stage so user can see what's needed
+    } else {
+        // Clear navigation error if access is valid
+        clearNavigationError();
+    }
+    
+    // Hide all stages
     stage1.style.display = 'none';
-    stage2.style.display = 'block';
-    // Results section is now inside Stage 2, so it will show/hide with Stage 2
-    // Progress section can show during processing
+    stage2.style.display = 'none';
+    stage3.style.display = 'none';
+    
+    // Show selected stage
+    currentStage = stageNumber;
+    if (stageNumber === 1) {
+        stage1.style.display = 'block';
+        // Show/hide Stage 1 CTA based on completion
+        if (stageCompletion.stage1) {
+            stage1Cta.style.display = 'block';
+        } else {
+            stage1Cta.style.display = 'none';
+        }
+    } else if (stageNumber === 2) {
+        stage2.style.display = 'block';
+        // Enable/disable training based on stage 1 completion
+        if (stageCompletion.stage1) {
+            enableTraining();
+        } else {
+            disableTraining();
+        }
+        // Show/hide Stage 2 CTA based on completion
+        if (stageCompletion.stage2) {
+            stage2Cta.style.display = 'block';
+        } else {
+            stage2Cta.style.display = 'none';
+        }
+    } else if (stageNumber === 3) {
+        stage3.style.display = 'block';
+        updateProductionDefaults();
+    }
+    
+    // Hide progress and results sections initially (they'll show when needed)
+    progressSection.style.display = 'none';
+    if (stageNumber !== 3) {
+        resultsSection.style.display = 'none';
+    }
+    
     hideError();
-    updateProductionDefaults();
+    updateNavigationIndicators();
+}
+
+// Validate Stage Access
+function validateStageAccess(stageNumber) {
+    if (stageNumber === 1) {
+        // Stage 1 is always accessible
+        return true;
+    } else if (stageNumber === 2) {
+        // Stage 2 requires Stage 1 complete
+        if (!stageCompletion.stage1) {
+            showNavigationError('Please complete Project Setup (Stage 1) before accessing Train Detector (Stage 2). You need to upload/select a project and run the frame analysis setup.');
+            return false;
+        }
+        return true;
+    } else if (stageNumber === 3) {
+        // Stage 3 requires either:
+        // 1. Stage 2 complete (detector trained in this session), OR
+        // 2. At least one project exists (user can use existing detector IDs)
+        if (!stageCompletion.stage2 && availableProjects.length === 0) {
+            showNavigationError('Please complete Train Detector (Stage 2) before accessing Produce Annotated Video (Stage 3). You need to train a detector first, or load an existing project that has trained detectors.');
+            return false;
+        }
+        return true;
+    }
+    return true;
+}
+
+// Navigation Error Functions
+function showNavigationError(message) {
+    navigationErrorText.textContent = message;
+    navigationError.style.display = 'flex';
+    // Scroll to navigation error
+    navigationError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearNavigationError() {
+    navigationError.style.display = 'none';
+    navigationErrorText.textContent = '';
+}
+
+// Update Navigation Indicators
+function updateNavigationIndicators() {
+    // Remove active class from all buttons
+    navStage1.classList.remove('active', 'completed', 'disabled');
+    navStage2.classList.remove('active', 'completed', 'disabled');
+    navStage3.classList.remove('active', 'completed', 'disabled');
+    
+    // Set active stage
+    if (currentStage === 1) {
+        navStage1.classList.add('active');
+    } else if (currentStage === 2) {
+        navStage2.classList.add('active');
+    } else if (currentStage === 3) {
+        navStage3.classList.add('active');
+    }
+    
+    // Show checkmarks for completed stages
+    if (stageCompletion.stage1) {
+        navStage1.classList.add('completed');
+        navStage1.querySelector('.stage-checkmark').style.display = 'inline';
+    } else {
+        navStage1.querySelector('.stage-checkmark').style.display = 'none';
+    }
+    
+    if (stageCompletion.stage2) {
+        navStage2.classList.add('completed');
+        navStage2.querySelector('.stage-checkmark').style.display = 'inline';
+    } else {
+        navStage2.querySelector('.stage-checkmark').style.display = 'none';
+    }
+    
+    if (stageCompletion.stage3) {
+        navStage3.classList.add('completed');
+        navStage3.querySelector('.stage-checkmark').style.display = 'inline';
+    } else {
+        navStage3.querySelector('.stage-checkmark').style.display = 'none';
+    }
+    
+    // Add visual indicator (but don't disable) for stages that aren't ready
+    // Users can still click and navigate, but will see an error message
+    if (!stageCompletion.stage1) {
+        navStage2.classList.add('disabled');
+        navStage3.classList.add('disabled');
+    } else if (!stageCompletion.stage2) {
+        navStage3.classList.add('disabled');
+    }
 }
 
 function enableTraining() {
-    trainingSection.style.display = 'block';
-    trainingDisabledMessage.style.display = 'none';
-    trainingContent.style.display = 'block';
-    trainingSection.classList.remove('training-section-disabled');
+    // Training section is in Stage 2, so only update if we're in Stage 2
+    if (currentStage === 2) {
+        trainingDisabledMessage.style.display = 'none';
+        trainingContent.style.display = 'block';
+        trainingSection.classList.remove('training-section-disabled');
+    }
 }
 
 function disableTraining() {
-    trainingSection.style.display = 'block';
-    trainingDisabledMessage.style.display = 'block';
-    trainingContent.style.display = 'none';
-    trainingSection.classList.add('training-section-disabled');
+    // Training section is in Stage 2, so only update if we're in Stage 2
+    if (currentStage === 2) {
+        trainingDisabledMessage.style.display = 'block';
+        trainingContent.style.display = 'none';
+        trainingSection.classList.add('training-section-disabled');
+    }
 }
 
 function checkProjectReady(project) {
@@ -111,12 +262,18 @@ function updateProductionDefaults() {
 // Project selection
 if (createNewProjectBtn) {
     createNewProjectBtn.addEventListener('click', () => {
-        showStage1();
+        showStage(1);
         uploadSection.style.display = 'block';
         projectSelectionSection.style.display = 'none';
         setupSection.style.display = 'none';
-        disableTraining();
-        readyForStage2.style.display = 'none';
+        // Reset stage completion when starting new project
+        stageCompletion.stage1 = false;
+        stageCompletion.stage2 = false;
+        stageCompletion.stage3 = false;
+        updateNavigationIndicators();
+        // Hide CTAs
+        stage1Cta.style.display = 'none';
+        stage2Cta.style.display = 'none';
         hideError();
     });
 }
@@ -160,33 +317,39 @@ loadProjectBtn.addEventListener('click', () => {
         // Enable training if project is set up
         if (checkProjectReady(project)) {
             enableTraining();
+            // Mark stage 1 as complete if project is ready
+            stageCompletion.stage1 = true;
+            updateNavigationIndicators();
+            // Show Stage 1 CTA if we're in Stage 1
+            if (currentStage === 1) {
+                stage1Cta.style.display = 'block';
+            }
         } else {
             disableTraining();
+            stageCompletion.stage1 = false;
+            updateNavigationIndicators();
+            // Hide Stage 1 CTA if project isn't ready
+            if (currentStage === 1) {
+                stage1Cta.style.display = 'none';
+            }
             showError('Project has not been set up yet. Please create a new project and run setup first.');
         }
-        readyForStage2.style.display = 'none';
+        stage2Cta.style.display = 'none';
     }
 });
 
-// Proceed to Stage 2
-proceedToStage2Btn.addEventListener('click', () => {
-    showStage2();
-});
+// CTA Button Handlers
+if (proceedToStage2Cta) {
+    proceedToStage2Cta.addEventListener('click', () => {
+        showStage(2);
+    });
+}
 
-// Stay in Stage 1 (hide the completion message)
-stayInStage1Btn.addEventListener('click', () => {
-    readyForStage2.style.display = 'none';
-    enableTraining(); // Re-enable training section so they can train another detector
-});
-
-// Manual navigation between stages
-goToStage2Btn.addEventListener('click', () => {
-    showStage2();
-});
-
-goToStage1Btn.addEventListener('click', () => {
-    showStage1();
-});
+if (proceedToStage3Cta) {
+    proceedToStage3Cta.addEventListener('click', () => {
+        showStage(3);
+    });
+}
 
 // File upload
 uploadArea.addEventListener('click', () => videoFileInput.click());
@@ -316,6 +479,9 @@ async function loadProjects() {
         const response = await fetch('/api/projects');
         const data = await response.json();
         
+        // Store available projects for validation
+        availableProjects = data.projects || [];
+        
         projectSelect.innerHTML = '<option value="">-- Select a project or create new --</option>';
         
         if (data.projects && data.projects.length > 0) {
@@ -334,13 +500,17 @@ async function loadProjects() {
             
             loadProjectBtn.style.display = 'inline-block';
             
-            // Update production project selector if in Stage 2
-            if (currentStage === 2) {
+            // Update production project selector if in Stage 3
+            if (currentStage === 3) {
                 updateProductionDefaults();
             }
+        } else {
+            // No projects available - clear the stored list
+            availableProjects = [];
         }
     } catch (error) {
         console.error('Failed to load projects:', error);
+        availableProjects = [];
     }
 }
 
@@ -378,6 +548,14 @@ document.getElementById('start-setup-btn').addEventListener('click', async () =>
         pollProgress(currentJobId, async () => {
             // Setup complete, enable training
             await loadProjects(); // Refresh project list
+            
+            // Mark Stage 1 as complete
+            stageCompletion.stage1 = true;
+            updateNavigationIndicators();
+            // Show Stage 1 CTA if we're in Stage 1
+            if (currentStage === 1) {
+                stage1Cta.style.display = 'block';
+            }
             
             // Get project directory from result
             try {
@@ -453,8 +631,15 @@ document.getElementById('start-training-btn').addEventListener('click', async ()
             }
             
             progressSection.style.display = 'none';
-            readyForStage2.style.display = 'block';
             trainingSection.style.display = 'none';
+            
+            // Mark Stage 2 as complete
+            stageCompletion.stage2 = true;
+            updateNavigationIndicators();
+            // Show Stage 2 CTA if we're in Stage 2
+            if (currentStage === 2) {
+                stage2Cta.style.display = 'block';
+            }
         });
     } catch (error) {
         showError(error.message);
@@ -597,10 +782,14 @@ function updateProgress(data) {
 
 // Results
 function showResults(jobId) {
-    // Only show results in Stage 2
-    if (currentStage !== 2) {
+    // Only show results in Stage 3
+    if (currentStage !== 3) {
         return;
     }
+    
+    // Mark Stage 3 as complete (optional, for tracking)
+    stageCompletion.stage3 = true;
+    updateNavigationIndicators();
     
     progressSection.style.display = 'none';
     resultsSection.style.display = 'block';
@@ -727,14 +916,14 @@ if (newProjectStage1Btn) {
         videoFileInput.value = '';
         
         // Reset to Stage 1
-        showStage1();
+        showStage(1);
         
         // Show upload section, hide others
         uploadSection.style.display = 'block';
         projectSelectionSection.style.display = 'none';
         setupSection.style.display = 'none';
         trainingSection.style.display = 'none';
-        readyForStage2.style.display = 'none';
+        stage2Cta.style.display = 'none';
         uploadSuccess.style.display = 'none';
         
         // Reload projects

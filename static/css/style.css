@@ -26,6 +26,167 @@ header h1 {
     opacity: 0.9;
 }
 
+/* Navigation Bar */
+.stage-navigation {
+    background-color: var(--color-background-secondary, #1e293b);
+    border-radius: var(--radius-lg, 8px);
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid var(--color-border, #334155);
+}
+
+.stage-nav-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.stage-nav-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background-color: var(--color-background, #0f172a);
+    border: 2px solid var(--color-border, #334155);
+    border-radius: var(--radius-md, 6px);
+    color: var(--color-foreground, #f1f5f9);
+    font-size: 1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 180px;
+    justify-content: center;
+}
+
+.stage-nav-button:hover:not(.disabled) {
+    background-color: var(--color-background-secondary, #1e293b);
+    border-color: var(--color-primary, #60a5fa);
+}
+
+.stage-nav-button.active {
+    background-color: var(--color-primary, #60a5fa);
+    border-color: var(--color-primary, #60a5fa);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.stage-nav-button.completed {
+    border-color: var(--color-success, #10b981);
+}
+
+.stage-nav-button.completed .stage-checkmark {
+    color: var(--color-success, #10b981);
+    font-weight: bold;
+}
+
+.stage-nav-button.disabled {
+    opacity: 0.6;
+    /* Allow clicking - just visual indicator that prerequisites aren't met */
+    cursor: pointer;
+}
+
+.stage-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+.stage-nav-button.active .stage-number {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.stage-label {
+    flex: 1;
+    text-align: center;
+}
+
+.stage-checkmark {
+    color: var(--color-success, #10b981);
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+.navigation-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md, 6px);
+    color: var(--color-error, #ef4444);
+    font-size: 0.95em;
+    margin-top: 10px;
+}
+
+.navigation-error svg {
+    flex-shrink: 0;
+    color: var(--color-error, #ef4444);
+}
+
+.navigation-error span {
+    flex: 1;
+}
+
+/* Stage CTA Buttons */
+.stage-cta {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    border: 2px solid var(--color-primary, #60a5fa);
+    border-radius: var(--radius-lg, 8px);
+}
+
+.cta-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.cta-text {
+    flex: 1;
+    min-width: 250px;
+}
+
+.cta-text h3 {
+    margin: 0 0 8px 0;
+    color: var(--color-success, #10b981);
+    font-size: 1.3em;
+}
+
+.cta-text p {
+    margin: 0;
+    color: var(--color-foreground, #f1f5f9);
+    opacity: 0.9;
+    font-size: 1em;
+}
+
+.cta-button {
+    flex-shrink: 0;
+    min-width: 200px;
+    font-size: 1.1em;
+    padding: 12px 24px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .cta-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .cta-button {
+        width: 100%;
+    }
+}
+
 /* Stage-specific styles */
 .stage-container {
     margin-bottom: 40px;

@@ -2,7 +2,31 @@
 
 The Video Annotator allows you to efficiently extract images from videos and send them to Groundlight for annotation and training. Video Annotator uses clustering to find a diverse set of images that will train your Groundlight detector to a high confidence level with minimal annotation effort. 
 
-## Annotating a video
+## Using the Web Interface
+
+The easiest way to use Video Annotator is through the web interface:
+
+1. **Start the web app**:
+   ```bash
+   ./run_webapp.sh
+   ```
+   Or manually:
+   ```bash
+   python webapp.py
+   ```
+
+2. **Open in browser**: Navigate to `http://localhost:5001`
+
+3. **Three-stage workflow**:
+   - **Stage 1: Project Setup** - Upload a video or load an existing project, then run frame analysis
+   - **Stage 2: Train Detector** - Configure and train your Groundlight detector
+   - **Stage 3: Produce Annotated Video** - Generate annotated videos with your trained detectors
+
+The interface features a persistent navigation bar at the top, allowing you to navigate between stages at any time. Visual indicators show which stages are complete, and helpful error messages guide you through the workflow.
+
+See `SPEC.md` for detailed documentation of the web interface.
+
+## Using the Command Line Interface
 
 After you set up your environment (see below), you can run the following commands to build a CV model and annotate a video.  Everything is stored in your project directory, so you can pick up where you left off.
 
