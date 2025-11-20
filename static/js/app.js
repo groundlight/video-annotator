@@ -800,10 +800,10 @@ function showResults(jobId) {
     
     // Set preview button (no retry needed, server handles it)
     previewBtn.href = `/api/preview/${jobId}/video`;
-    previewBtn.style.display = 'inline-block';
+    previewBtn.style.display = 'inline-flex';
     
     // Set up download button with retry logic
-    downloadBtn.style.display = 'inline-block';
+    downloadBtn.style.display = 'inline-flex';
     downloadBtn.onclick = async (e) => {
         e.preventDefault();
         await downloadVideoWithRetry(jobId);

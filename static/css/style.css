@@ -16,9 +16,23 @@ header {
     margin-bottom: 30px;
 }
 
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.logo-mark {
+    height: 48px;
+    width: auto;
+    display: block;
+}
+
 header h1 {
     font-size: 3em;
-    margin-bottom: 10px;
+    margin-bottom: 0;
 }
 
 .subtitle {
@@ -276,28 +290,27 @@ header h1 {
     font-weight: 600;
 }
 
-.download-links {
+/* Success Actions - Single row of buttons at bottom */
+.success-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--color-border, #334155);
+    align-items: center;
 }
 
-.link-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-/* Download buttons should use shared button classes */
-/* Add btn class to HTML elements using download-btn */
-.download-btn {
-    /* Extend shared button styles - only add download-specific styles */
+.success-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     text-decoration: none;
-    /* Let shared button hover styles handle all hover states - no override needed */
+    white-space: nowrap;
 }
 
-.download-btn.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
+.success-actions .btn svg {
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
@@ -309,8 +322,14 @@ header h1 {
         grid-template-columns: 1fr;
     }
     
-    .link-group {
-        grid-template-columns: 1fr;
+    .success-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .success-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
     
     header h1 {
