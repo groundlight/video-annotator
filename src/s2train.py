@@ -23,10 +23,29 @@ def pprint_iq(iq: ImageQuery) -> None:
         label = '-' if iq.result is None else iq.result.label.value
         print(f'Label: {label}')
     else:
-        raise ValueError(
-            f'Unsupported result type: {type(iq.result)}'
-        )
-        
+        # Handle multiclass and bounding box modes
+        if iq.result is not None:
+            # Multiclass: show the detected class
+            if hasattr(iq.result, 'label'):
+                if hasattr(iq.result.label, 'value'):
+                    print(f'Class: {iq.result.label.value}')
+                else:
+                    print(f'Class: {iq.result.label}')
+            # Bounding box: show list of boxes
+            elif hasattr(iq, 'rois'):
+                rois = iq.rois if iq.rois is not None else []
+                print(f'Bounding Boxes: {len(rois)} box(es)')
+                for i, roi in enumerate(rois):
+                    if hasattr(roi, 'geometry'):
+                        bbox = roi.geometry
+                        print(f'  Box {i+1}: left={bbox.left:.3f}, top={bbox.top:.3f}, right={bbox.right:.3f}, bottom={bbox.bottom:.3f}')
+                    else:
+                        print(f'  Box {i+1}: {roi}')
+            else:
+                print(f'Result type: {type(iq.result).__name__}')
+        else:
+            print('Result: None')
+
     confidence = None if iq.result is None else iq.result.confidence
     confidence_str = '-' if confidence is None else f'{confidence * 100:.2f}%'
     print(f'Confidence: {confidence_str}')
